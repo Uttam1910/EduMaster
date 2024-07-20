@@ -18,6 +18,7 @@
   "build": {
     "env": {
       "CI": "false"
-    }
+    },
+    "command": "npm run build"
   }
 }

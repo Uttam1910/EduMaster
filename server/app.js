@@ -47,7 +47,7 @@ app.get('/ping', (req, res) => {
 });
 
 // Status Check Route
-app.get('/status', (req, res) => {
+app.get('/', (req, res) => {
   const statusMessage = dbConnectionStatus === 'Connected'
     ? '<html><body><h1>Success: Server is running and database is connected.</h1></body></html>'
     : '<html><body><h1>Error: Server is running, but database connection failed.</h1></body></html>';

@@ -45,7 +45,7 @@ const contactRoutes = require('./routes/contactRoutes');
 app.use('/api', contactRoutes);
 
 // Health Check Route
-app.get('/', (req, res) => {
+app.get('/ping', (req, res) => {
   res.status(200).send('<html><body><h1>Success: Pong</h1></body></html>');
 });
 

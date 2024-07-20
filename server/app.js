@@ -26,7 +26,7 @@ app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 app.use(cookieParser());
 app.use(cors({
-  origin: 'https://your-frontend-url.com', // Update this with your frontend URL
+  origin: 'https://edu-master-pyej-3njgi5rj0-uttam-thapas-projects.vercel.app/', // Update this with your frontend URL
   methods: ["POST", "GET"],
   credentials: true,
 }));

@@ -38,9 +38,6 @@ app.use('/api/users', userRoutes);
 const courseRoutes = require('./routes/courseRoutes');
 app.use('/api/courses', courseRoutes);
 
-const paymentRoutes = require('./routes/paymentRoutes');
-app.use('/api/payment', paymentRoutes);
-
 const contactRoutes = require('./routes/contactRoutes');
 app.use('/api', contactRoutes);
 

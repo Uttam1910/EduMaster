@@ -8,7 +8,7 @@ const connectDB = async () => {
     mongoose.set('strictQuery', false); // Set strictQuery to false
 
     // Use the environment variable if it exists, otherwise use a fallback URI
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/new ';
+    const mongoURI = process.env.MONGODB_URI;
 
     await mongoose.connect(mongoURI, {
     //   useNewUrlParser: true,

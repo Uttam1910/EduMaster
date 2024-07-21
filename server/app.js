@@ -26,7 +26,7 @@ app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 app.use(cookieParser());
 app.use(cors({
-  origin: 'https://edu-master-pyej-3njgi5rj0-uttam-thapas-projects.vercel.app/', // Update this with your frontend URL
+  origin: 'https://edu-master-pyej-3njgi5rj0-uttam-thapas-projects.vercel.app', // Update this with your frontend URL
   methods: ["POST", "GET"],
   credentials: true,
 }));
@@ -42,18 +42,18 @@ const contactRoutes = require('./routes/contactRoutes');
 app.use('/api', contactRoutes);
 
 // Health Check Route
-app.get('/', (req, res) => {
+app.get('/status', (req, res) => {
   res.status(200).send('<html><body><h1>Success: Pong</h1></body></html>');
 });
 
-// // Status Check Route
-// app.get('/', (req, res) => {
-//   const statusMessage = dbConnectionStatus === 'Connected'
-//     ? '<html><body><h1>Success: Server is running and database is connected.</h1></body></html>'
-//     : '<html><body><h1>Error: Server is running, but database connection failed.</h1></body></html>';
+// Status Check Route
+app.get('/', (req, res) => {
+  const statusMessage = dbConnectionStatus === 'Connected'
+    ? '<html><body><h1>Success: Server is running and database is connected.</h1></body></html>'
+    : '<html><body><h1>Error: Server is running, but database connection failed.</h1></body></html>';
   
-//   res.status(200).send(statusMessage);
-// });
+  res.status(200).send(statusMessage);
+});
 
 // Logging
 app.use((req, res, next) => {

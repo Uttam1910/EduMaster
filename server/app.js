@@ -12,22 +12,15 @@ dotenv.config();
 const app = express();
 
 // Connect to the database
-let dbConnectionStatus = 'Unknown'; // Initialize connection status
-
-connectDB().then(() => {
-  dbConnectionStatus = 'Connected';
-}).catch((error) => {
-  dbConnectionStatus = 'Failed';
-  console.error('Database connection error:', error);
-});
+connectDB();
 
 // Middleware
 app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 app.use(cookieParser());
 app.use(cors({
-  origin: 'http://example.com',
-  methods: ["POST", "GET"],
+  origin: 'https://edu-master-pyej-kkghb7ilc-uttam-thapas-projects.vercel.app', // Update this with your frontend URL
+  methods: ["POST", "GET",'PUT', 'DELETE'],
   credentials: true,
 }));
 
@@ -38,27 +31,18 @@ app.use('/api/users', userRoutes);
 const courseRoutes = require('./routes/courseRoutes');
 app.use('/api/courses', courseRoutes);
 
+
+
 const contactRoutes = require('./routes/contactRoutes');
 app.use('/api', contactRoutes);
 
-// Health Check Route
-app.get('/status', (req, res) => {
-  res.status(200).send('<html><body><h1>Success: Pong</h1></body></html>');
-});
-
-// Status Check Route
-app.get('/', (req, res) => {
-  const statusMessage = dbConnectionStatus === 'Connected'
-    ? '<html><body><h1>Success: Server is running and database is connected.</h1></body></html>'
-    : '<html><body><h1>Error: Server is running, but database connection failed.</h1></body></html>';
-  
-  res.status(200).send(statusMessage);
-});
-
-// Logging
 app.use((req, res, next) => {
   console.log(`Incoming request: ${req.method} ${req.url}`);
   next();
+});
+
+app.get('/status', (req, res) => {
+  res.status(200).send('<html><body><h1>Success: Pong</h1></body></html>');
 });
 
 // Error handling

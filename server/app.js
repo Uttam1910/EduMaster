@@ -19,10 +19,11 @@ app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 app.use(cookieParser());
 app.use(cors({
-  origin: 'https://edu-master-pyej-kkghb7ilc-uttam-thapas-projects.vercel.app', // Update this with your frontend URL
+  origin: 'https://edu-master-pyej.vercel.app', // Update this with your frontend URL
   methods: ["POST", "GET",'PUT', 'DELETE'],
   credentials: true,
 }));
+
 
 // Routes
 const userRoutes = require('./routes/userRoutes');

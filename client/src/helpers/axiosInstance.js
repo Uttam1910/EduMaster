@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://edu-master-one.vercel.app/api',
+  baseURL: 'https://edu-master-one.vercel.app',
   withCredentials: true,
 });
 

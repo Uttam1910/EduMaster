@@ -10,7 +10,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://edu-master-seven.vercel.app/', // Replace this with your backend server URL
+        target: 'https://edumaster-5vk1.onrender.com', // Replace this with your backend server URL
         changeOrigin: true,
         secure: false,
       },

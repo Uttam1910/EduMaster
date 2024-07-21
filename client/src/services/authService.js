@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/users/';
+const API_URL = 'https://edumaster-5vk1.onrender.com/api/users/';
 
 export const forgotPassword = (email) => {
   return axios.post(`${API_URL}forgotpassword`, { email });

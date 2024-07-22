@@ -2,10 +2,15 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
+// const axiosInstance = axios.create({
+//   baseURL: 'https://edumaster-5vk1.onrender.com/api',
+//   withCredentials: true,
+// });
 const axiosInstance = axios.create({
-  baseURL: 'https://edumaster-5vk1.onrender.com/api',
+  baseURL: process.env.REACT_APP_API_URL,
   withCredentials: true,
 });
+
 
 axiosInstance.interceptors.request.use(
   (config) => {

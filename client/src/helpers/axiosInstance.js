@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 //   withCredentials: true,
 // });
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_APP_API_URL,
+  baseURL: 'https://edumaster-5vk1.onrender.com/api',
   withCredentials: true,
 });
 

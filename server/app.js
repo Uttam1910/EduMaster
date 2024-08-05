@@ -19,8 +19,6 @@ app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 app.use(cookieParser());
 app.use(cors({
-  origin: 'https://edu-master-pyej.vercel.app', // Update this with your frontend URL
-  methods: ["POST", "GET",'PUT', 'DELETE'],
   credentials: true,
 }));
 

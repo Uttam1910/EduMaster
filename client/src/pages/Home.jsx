@@ -19,6 +19,7 @@ const Home = () => {
     const fetchPopularCourses = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/api/courses`);
+        console.log(import.meta.env.VITE_APP_API_URL);
         console.log('API Response:', response.data); // Debug log
         if (response.data && Array.isArray(response.data)) {
           setPopularCourses(response.data.slice(0, 3));

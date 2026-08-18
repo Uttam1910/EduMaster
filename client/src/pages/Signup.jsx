@@ -4,13 +4,16 @@ import { useForm } from 'react-hook-form';
 import { registerUser, login } from '../redux/slice/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { FaUser, FaEnvelope, FaLock, FaUserShield } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaUserShield } from 'react-icons/fa';
+import { HiAcademicCap } from 'react-icons/hi2';
+import Button from '../components/ui/Button';
 
 const Signup = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -21,100 +24,136 @@ const Signup = () => {
       const result = await dispatch(registerUser(data));
       if (result.payload && result.payload.user) {
         dispatch(login(result.payload));
-        if (result.payload.user.role === 'admin') { // Updated: Correctly check user role
-          toast.success('Admin registration successful');
-        } else {
-          toast.success('User registration successful');
-        }
+        toast.success('Registration successful! Welcome to EduMaster.');
         navigate('/');
       }
     } catch (error) {
-      if (error.message) {
-        toast.error(error.message);
-      } else {
-        toast.error('Registration failed. Please try again.');
-      }
+      toast.error(error?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-purple-500 to-indigo-600">
-      <div className="max-w-md w-full px-8 py-10 bg-white shadow-lg rounded-lg">
-        <h2 className="text-3xl font-semibold text-center text-gray-800 mb-8">Sign Up</h2>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="relative">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Username
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-900 text-slate-900 relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-full max-w-4xl h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-10 right-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl" />
+      </div>
+
+      <div className="max-w-md w-full bg-white/95 backdrop-blur-xl rounded-3xl p-8 sm:p-10 border border-slate-200/80 shadow-2xl space-y-8 relative z-10">
+        {/* Header Branding */}
+        <div className="text-center space-y-2">
+          <Link to="/" className="inline-flex items-center gap-2">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+              <HiAcademicCap className="text-3xl" />
+            </div>
+          </Link>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Create Account</h2>
+          <p className="text-sm text-slate-500">Join thousands of students and start your learning journey.</p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Username */}
+          <div className="space-y-1.5">
+            <label htmlFor="username" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Full Name / Username
             </label>
-            <input
-              {...register('username', { required: true })}
-              type="text"
-              id="username"
-              className="mt-1 block w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              autoComplete="username"
-            />
-            <FaUser className="absolute left-3 top-9 text-gray-400" />
-            {errors.username && <span className="text-red-500 text-sm">Username is required</span>}
+            <div className="relative">
+              <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                {...register('username', { required: 'Username is required' })}
+                type="text"
+                id="username"
+                placeholder="John Doe"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition-all"
+                autoComplete="name"
+              />
+            </div>
+            {errors.username && <span className="text-rose-500 text-xs font-medium">{errors.username.message}</span>}
           </div>
 
-          <div className="relative">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          {/* Email */}
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Email Address
             </label>
-            <input
-              {...register('email', { required: true })}
-              type="email"
-              id="email"
-              className="mt-1 block w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              autoComplete="email"
-            />
-            <FaEnvelope className="absolute left-3 top-9 text-gray-400" />
-            {errors.email && <span className="text-red-500 text-sm">Email is required</span>}
+            <div className="relative">
+              <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                {...register('email', { required: 'Email address is required' })}
+                type="email"
+                id="email"
+                placeholder="you@example.com"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition-all"
+                autoComplete="email"
+              />
+            </div>
+            {errors.email && <span className="text-rose-500 text-xs font-medium">{errors.email.message}</span>}
           </div>
 
-          <div className="relative">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          {/* Password */}
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Password
             </label>
-            <input
-              {...register('password', { required: true })}
-              type="password"
-              id="password"
-              className="mt-1 block w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              autoComplete="new-password"
-            />
-            <FaLock className="absolute left-3 top-9 text-gray-400" />
-            {errors.password && <span className="text-red-500 text-sm">Password is required</span>}
+            <div className="relative">
+              <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                {...register('password', { required: 'Password is required' })}
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                placeholder="••••••••"
+                className="w-full pl-11 pr-11 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition-all"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            {errors.password && <span className="text-rose-500 text-xs font-medium">{errors.password.message}</span>}
           </div>
 
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-              Role
+          {/* Role */}
+          <div className="space-y-1.5">
+            <label htmlFor="role" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Account Role
             </label>
-            <select
-              {...register('role')}
-              id="role"
-              className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            >
-              <option value="student">Student</option>
-              <option value="admin">Admin</option>
-            </select>
+            <div className="relative">
+              <FaUserShield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <select
+                {...register('role')}
+                id="role"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition-all appearance-none cursor-pointer"
+              >
+                <option value="student">Student Learner</option>
+                <option value="admin">Instructor / Admin</option>
+              </select>
+            </div>
           </div>
 
-          <button
+          <Button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            disabled={loading}
+            variant="primary"
+            size="lg"
+            isLoading={loading}
+            className="w-full justify-center shadow-lg shadow-indigo-600/25 mt-2"
           >
-            {loading ? 'Signing up...' : 'Sign Up'}
-          </button>
+            Create Account
+          </Button>
         </form>
 
-        <div className="mt-6 text-center">
-          <span className="text-sm text-gray-600">Already have an account?</span>{' '}
-          <Link to="/login" className="text-sm text-indigo-600 hover:underline">
-            Log in
+        {/* Footer Toggle */}
+        <div className="pt-4 border-t border-slate-100 text-center text-sm text-slate-600">
+          <span>Already have an account?</span>{' '}
+          <Link to="/login" className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline">
+            Sign In
           </Link>
         </div>
       </div>

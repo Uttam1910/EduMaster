@@ -3,7 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserProfile } from '../../redux/slice/authSlice';
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEdit, FaKey, FaImage } from 'react-icons/fa';
+import { FaEdit, FaKey, FaCamera } from 'react-icons/fa';
+import { HiUser, HiEnvelope, HiShieldCheck, HiCalendar, HiClock } from 'react-icons/hi2';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -16,62 +19,104 @@ const Profile = () => {
 
   useEffect(() => {
     if (error) {
-      toast.error(error.message || 'An error occurred');
+      toast.error(typeof error === 'string' ? error : error?.message || 'An error occurred fetching profile');
     }
   }, [error]);
 
   return (
-    <div className="container mx-auto my-10 p-6 bg-white shadow-lg rounded-lg max-w-3xl">
-      <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Profile</h1>
-      {user ? (
-        <div className="flex flex-col items-center">
-          {user.avatar && user.avatar.secureUrl ? (
-            <img
-              src={user.avatar.secureUrl}
-              alt="User Avatar"
-              className="w-40 h-40 rounded-full mb-6 border-4 border-indigo-500 object-cover"
-            />
-          ) : (
-            <div className="w-40 h-40 rounded-full mb-6 border-4 border-indigo-500 flex items-center justify-center text-gray-500">
-              No Avatar
-            </div>
-          )}
-          <div className="text-center mb-8">
-            <p className="text-2xl font-semibold text-gray-700 mb-2">Name: {user.username}</p>
-            <p className="text-lg text-gray-600 mb-2">Email: {user.email}</p>
-            <p className="text-md text-gray-500 mb-2">Role: {user.role}</p>
-            <p className="text-md text-gray-500 mb-2">Active: {user.isActive ? 'Yes' : 'No'}</p>
-            <p className="text-md text-gray-500 mb-2">
-              Created At: {new Date(user.createdAt).toLocaleString()}
-            </p>
-            <p className="text-md text-gray-500 mb-2">
-              Updated At: {new Date(user.updatedAt).toLocaleString()}
-            </p>
-          </div>
-          <div className="flex space-x-6 mt-4">
-            <Link
-              to="/update-profile"
-              className="bg-indigo-500 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 flex items-center"
-            >
-              <FaEdit className="mr-2" /> Edit Profile
-            </Link>
-            <Link
-              to="/changepassword"
-              className="bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-700 flex items-center"
-            >
-              <FaKey className="mr-2" /> Change Password
-            </Link>
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
+      {/* Profile Header Banner */}
+      <div className="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-8 text-white shadow-xl overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+          {/* Avatar Container */}
+          <div className="relative group">
+            {user?.avatar?.secureUrl ? (
+              <img
+                src={user.avatar.secureUrl}
+                alt="User Avatar"
+                className="w-28 h-28 rounded-full border-4 border-white/20 shadow-xl object-cover"
+              />
+            ) : (
+              <div className="w-28 h-28 rounded-full border-4 border-white/20 shadow-xl bg-indigo-600 flex items-center justify-center font-bold text-3xl text-white">
+                {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+              </div>
+            )}
             <button
               onClick={() => navigate('/update-avatar')}
-              className="bg-green-500 text-white px-5 py-2 rounded-lg hover:bg-green-700 flex items-center"
+              className="absolute bottom-0 right-0 p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-md focus:outline-none"
+              title="Update Avatar"
             >
-              <FaImage className="mr-2" /> Update Avatar
+              <FaCamera className="text-xs" />
             </button>
+          </div>
+
+          <div className="text-center sm:text-left space-y-1">
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{user?.username || 'User Profile'}</h1>
+              <Badge variant={user?.role === 'admin' ? 'rose' : 'indigo'} size="xs">
+                {user?.role || 'student'}
+              </Badge>
+            </div>
+            <p className="text-slate-300 text-sm">{user?.email}</p>
+            <p className="text-xs text-slate-400">Account Status: <span className="text-emerald-400 font-semibold">Active</span></p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Profile Info Cards */}
+      {user ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">User Details</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-3 text-slate-700">
+                <HiUser className="text-indigo-600 text-lg" />
+                <span>Username: <strong>{user.username}</strong></span>
+              </div>
+              <div className="flex items-center gap-3 text-slate-700">
+                <HiEnvelope className="text-indigo-600 text-lg" />
+                <span>Email: <strong>{user.email}</strong></span>
+              </div>
+              <div className="flex items-center gap-3 text-slate-700">
+                <HiShieldCheck className="text-indigo-600 text-lg" />
+                <span>Role: <strong>{user.role}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Account Metadata</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-3 text-slate-700">
+                <HiCalendar className="text-indigo-600 text-lg" />
+                <span>Joined: <strong>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</strong></span>
+              </div>
+              <div className="flex items-center gap-3 text-slate-700">
+                <HiClock className="text-indigo-600 text-lg" />
+                <span>Last Updated: <strong>{user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : 'N/A'}</strong></span>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
-        <p className="text-center text-gray-500">Loading...</p>
+        <div className="bg-white rounded-2xl p-12 text-center text-slate-500 animate-pulse">
+          Loading profile details...
+        </div>
       )}
+
+      {/* Action Controls */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-wrap gap-4 justify-center sm:justify-start">
+        <Button variant="primary" size="md" onClick={() => navigate('/update-profile')} icon={FaEdit}>
+          Edit Profile
+        </Button>
+        <Button variant="outline" size="md" onClick={() => navigate('/update-avatar')} icon={FaCamera}>
+          Update Avatar
+        </Button>
+        <Button variant="danger" size="md" onClick={() => navigate('/changepassword')} icon={FaKey}>
+          Change Password
+        </Button>
+      </div>
     </div>
   );
 };

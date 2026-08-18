@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'https://edumaster-5vk1.onrender.com/api/users/';
+const BASE_HOST = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000';
+const API_URL = `${BASE_HOST}/api/users/`;
 
 export const forgotPassword = (email) => {
   return axios.post(`${API_URL}forgotpassword`, { email });

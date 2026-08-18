@@ -1,72 +1,35 @@
-// RefundsCancellations.jsx
 import React from 'react';
+import Badge from '../../components/ui/Badge';
 
 const RefundsCancellations = () => {
   return (
-    <div className="container mx-auto py-16 px-4">
-      <h1 className="text-4xl font-bold mb-8 text-center">Refunds and Cancellations</h1>
-      
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
-        <p>
-          Thank you for purchasing our courses at EduMaster. We strive to ensure that our customers are satisfied with their learning experience. If, for any reason, you are not entirely satisfied with your purchase, we are here to help.
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
+      <div className="text-center space-y-2">
+        <Badge variant="amber" size="sm">Billing Policy</Badge>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Refunds and Cancellations</h1>
+        <p className="text-xs text-slate-400">Last updated: {new Date().getFullYear()}</p>
+      </div>
+
+      <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-md space-y-6 text-slate-700 text-sm leading-relaxed">
+        <p className="text-base text-slate-800">
+          EduMaster aims for complete student satisfaction. Here is our refund and enrollment cancellation policy.
         </p>
-      </section>
-      
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">2. Refund Eligibility</h2>
-        <p>
-          To be eligible for a refund, you must meet the following criteria:
-        </p>
-        <ul className="list-disc list-inside ml-4 mt-4 space-y-2">
-          <li>You must request the refund within 30 days of your purchase.</li>
-          <li>You have not completed more than 20% of the course.</li>
-          <li>You have not downloaded any materials from the course.</li>
-          <li>You provide a valid reason for requesting the refund, such as technical issues or dissatisfaction with the course content.</li>
-        </ul>
-      </section>
-      
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">3. Non-Refundable Items</h2>
-        <p>
-          Certain items are non-refundable, including but not limited to:
-        </p>
-        <ul className="list-disc list-inside ml-4 mt-4 space-y-2">
-          <li>Completed courses</li>
-          <li>Downloadable software products</li>
-          <li>Services that have already been provided</li>
-        </ul>
-      </section>
-      
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">4. Refund Process</h2>
-        <p>
-          To request a refund, please contact us at <a href="mailto:r2464300@gmail.com" className="text-blue-500 underline">r2464300@gmail.com</a> with your order details and the reason for the refund request. Our team will review your request and notify you of the approval or rejection of your refund.
-        </p>
-        <p className="mt-4">
-          If your refund is approved, we will initiate a refund to your original method of payment. You will receive the credit within a certain number of days, depending on your card issuer's policies.
-        </p>
-      </section>
-      
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">5. Cancellations</h2>
-        <p>
-          You may cancel your subscription at any time. However, please note that canceling your subscription does not automatically result in a refund. If you wish to request a refund along with your cancellation, please refer to our refund eligibility criteria above.
-        </p>
-      </section>
-      
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">6. Contact Us</h2>
-        <p>
-          If you have any questions about our Refunds and Cancellations Policy, please contact us:
-        </p>
-        <ul className="list-disc list-inside ml-4 mt-4 space-y-2">
-          <li>EduMaster</li>
-          <li>Email: <a href="mailto:r2464300@gmail.com" className="text-blue-500 underline">r2464300@gmail.com</a></li>
-          <li>Phone: (91) 7303896794</li>
-          <li>Address: Gao Devi Road, Mumbai, Maharashtra, 400078</li>
-        </ul>
-      </section>
+
+        <section className="space-y-2 pt-4 border-t border-slate-100">
+          <h2 className="text-lg font-bold text-slate-900">1. Refund Eligibility</h2>
+          <p>Students can request a full refund within 30 days of purchasing a paid course subscription if less than 20% of modules have been completed.</p>
+        </section>
+
+        <section className="space-y-2 pt-4 border-t border-slate-100">
+          <h2 className="text-lg font-bold text-slate-900">2. Processing Time</h2>
+          <p>Approved refunds are processed back to original payment methods within 5–7 business days.</p>
+        </section>
+
+        <section className="space-y-2 pt-4 border-t border-slate-100">
+          <h2 className="text-lg font-bold text-slate-900">3. Support Contact</h2>
+          <p>To initiate a cancellation or refund request, reach out at <strong>r2464300@gmail.com</strong>.</p>
+        </section>
+      </div>
     </div>
   );
 };

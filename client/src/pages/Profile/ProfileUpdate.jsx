@@ -3,26 +3,32 @@ import { useDispatch, useSelector } from "react-redux";
 import { updateProfile } from "../../redux/slice/userSlice";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import Button from "../../components/ui/Button";
+import { HiUser, HiEnvelope, HiLockClosed } from "react-icons/hi2";
 
 const ProfileUpdate = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.user);
+  const authUser = useSelector((state) => state.auth.user);
+  const userState = useSelector((state) => state.user.user);
+  const currentUser = userState || authUser;
+
   const [formData, setFormData] = useState({
-    username: user?.username || "",
-    email: user?.email || "",
+    username: currentUser?.username || "",
+    email: currentUser?.email || "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (currentUser) {
       setFormData({
-        username: user.username,
-        email: user.email,
+        username: currentUser.username || "",
+        email: currentUser.email || "",
         password: "",
       });
     }
-  }, [user]);
+  }, [currentUser]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,60 +37,97 @@ const ProfileUpdate = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setLoading(true);
     dispatch(updateProfile(formData))
       .unwrap()
       .then(() => {
-        toast.success("Profile updated successfully");
+        toast.success("Profile details updated successfully");
         navigate("/profile");
       })
       .catch((error) => {
-        toast.error(error.message || "Failed to update profile");
-      });
+        toast.error(typeof error === 'string' ? error : error?.message || "Failed to update profile");
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-8 bg-white shadow-lg rounded-lg">
-      <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">Update Profile</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Username</label>
-          <input
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-xl mx-auto space-y-6">
+      <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-md space-y-6">
+        <div className="text-center space-y-1">
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Edit Profile</h2>
+          <p className="text-sm text-slate-500">Update your account information below.</p>
         </div>
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-        </div>
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <button
-            type="submit"
-            className="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Update Profile
-          </button>
-        </div>
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">Username</label>
+            <div className="relative">
+              <HiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">Email Address</label>
+            <div className="relative">
+              <HiEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Confirm Current Password (Required to save changes)
+            </label>
+            <div className="relative">
+              <HiLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              onClick={() => navigate('/profile')}
+              className="w-1/2 justify-center"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              isLoading={loading}
+              className="w-1/2 justify-center"
+            >
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

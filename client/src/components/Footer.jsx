@@ -1,5 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { BsFacebook, BsInstagram, BsLinkedin, BsGithub } from 'react-icons/bs';
+import { HiAcademicCap } from 'react-icons/hi2';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser, logout } from '../redux/slice/authSlice';
 import { useNavigate } from 'react-router-dom';
@@ -16,91 +18,110 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-gray-800 text-white py-12 mt-8">
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Company Info */}
-        <div className="space-y-4 px-4 md:px-8">
-          <h3 className="text-2xl font-bold mb-4">EduMaster</h3>
-          <p className="text-sm">Gao Devi Road</p>
-          <p className="text-sm">Mumbai, Maharashtra, 400078</p>
-          <p className="text-sm">Email: r2464300@gmail.com</p>
-          <p className="text-sm">Phone: (91) 7303896794</p>
-        </div>
+    <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 pt-16 pb-12 mt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+          {/* Brand Info */}
+          <div className="space-y-4 md:col-span-1">
+            <Link to="/" className="flex items-center gap-2 text-white font-bold text-2xl tracking-tight">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                <HiAcademicCap className="text-2xl" />
+              </div>
+              <span>EduMaster</span>
+            </Link>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Empowering learners worldwide with production-ready skills, expert guidance, and interactive courses.
+            </p>
+            <div className="pt-2 text-xs text-slate-500 space-y-1">
+              <p>Mumbai, Maharashtra, 400078</p>
+              <p>Contact: r2464300@gmail.com</p>
+            </div>
+          </div>
 
-        {/* Quick Links and Legal */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 px-4 md:px-8">
           {/* Quick Links */}
-          <div className="space-y-2">
-            <h3 className="text-2xl font-bold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
+          <div className="space-y-4">
+            <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Navigation</h4>
+            <ul className="space-y-2.5 text-sm">
               <li>
-                <a href="/" className="hover:text-gray-400 text-sm transition-colors">Home</a>
+                <Link to="/" className="hover:text-indigo-400 transition-colors">Home</Link>
               </li>
               <li>
-                <a href="/about" className="hover:text-gray-400 text-sm transition-colors">About Us</a>
+                <Link to="/courses" className="hover:text-indigo-400 transition-colors">All Courses</Link>
               </li>
               <li>
-                <a href="/contact" className="hover:text-gray-400 text-sm transition-colors">Contact</a>
+                <Link to="/about" className="hover:text-indigo-400 transition-colors">About Us</Link>
               </li>
               <li>
-                <a href="/courses" className="hover:text-gray-400 text-sm transition-colors">Courses</a>
+                <Link to="/contact" className="hover:text-indigo-400 transition-colors">Contact Support</Link>
               </li>
-              {!isLoggedIn && (
+            </ul>
+          </div>
+
+          {/* Platform / Account */}
+          <div className="space-y-4">
+            <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Account</h4>
+            <ul className="space-y-2.5 text-sm">
+              {!isLoggedIn ? (
                 <>
                   <li>
-                    <a href="/login" className="hover:text-gray-400 text-sm transition-colors">Login</a>
+                    <Link to="/login" className="hover:text-indigo-400 transition-colors">Sign In</Link>
                   </li>
                   <li>
-                    <a href="/signup" className="hover:text-gray-400 text-sm transition-colors">Sign Up</a>
+                    <Link to="/signup" className="hover:text-indigo-400 transition-colors">Create Account</Link>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link to="/profile" className="hover:text-indigo-400 transition-colors">My Profile</Link>
+                  </li>
+                  <li>
+                    <button onClick={handleLogout} className="hover:text-indigo-400 transition-colors text-left">
+                      Sign Out
+                    </button>
                   </li>
                 </>
               )}
-              {isLoggedIn && (
-                <li>
-                  <button onClick={handleLogout} className="hover:text-gray-400 text-sm transition-colors">Logout</button>
-                </li>
-              )}
             </ul>
           </div>
 
-          {/* Legal */}
-          <div className="space-y-2">
-            <h3 className="text-2xl font-bold mb-4">Legal</h3>
-            <ul className="space-y-2">
+          {/* Legal & Social */}
+          <div className="space-y-4">
+            <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Legal & Social</h4>
+            <ul className="space-y-2.5 text-sm">
               <li>
-                <a href="/terms-conditions" className="hover:text-gray-400 text-sm transition-colors">Terms and Conditions</a>
+                <Link to="/terms-conditions" className="hover:text-indigo-400 transition-colors">Terms of Service</Link>
               </li>
               <li>
-                <a href="/privacy-policy" className="hover:text-gray-400 text-sm transition-colors">Privacy Policy</a>
+                <Link to="/privacy-policy" className="hover:text-indigo-400 transition-colors">Privacy Policy</Link>
               </li>
               <li>
-                <a href="/refunds-cancellations" className="hover:text-gray-400 text-sm transition-colors">Refunds and Cancellations</a>
+                <Link to="/refunds-cancellations" className="hover:text-indigo-400 transition-colors">Refund Policy</Link>
               </li>
             </ul>
+            <div className="pt-4 flex space-x-4">
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-400 hover:text-white flex items-center justify-center transition-all duration-200">
+                <BsFacebook size={18} />
+              </a>
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-400 hover:text-white flex items-center justify-center transition-all duration-200">
+                <BsInstagram size={18} />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-400 hover:text-white flex items-center justify-center transition-all duration-200">
+                <BsLinkedin size={18} />
+              </a>
+              <a href="https://github.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-400 hover:text-white flex items-center justify-center transition-all duration-200">
+                <BsGithub size={18} />
+              </a>
+            </div>
           </div>
         </div>
 
-        {/* Social Media */}
-        <div className="flex flex-col items-center space-y-4 px-4 md:px-8">
-          <h3 className="text-2xl font-bold mb-4">Follow Us</h3>
-          <div className="flex space-x-6">
-            <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer">
-              <BsFacebook size={24} className="hover:text-gray-400 transition-colors" />
-            </a>
-            <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
-              <BsInstagram size={24} className="hover:text-gray-400 transition-colors" />
-            </a>
-            <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
-              <BsLinkedin size={24} className="hover:text-gray-400 transition-colors" />
-            </a>
-            <a href="https://www.github.com" target="_blank" rel="noopener noreferrer">
-              <BsGithub size={24} className="hover:text-gray-400 transition-colors" />
-            </a>
-          </div>
+        <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+          <p>&copy; {new Date().getFullYear()} EduMaster Learning Platform. All rights reserved.</p>
+          <p className="flex items-center gap-1">
+            Built for modern education & skills training.
+          </p>
         </div>
-      </div>
-      <div className="mt-12 border-t border-gray-700 pt-4">
-        <p className="text-center text-sm">&copy; {new Date().getFullYear()} EduMaster. All rights reserved.</p>
       </div>
     </footer>
   );

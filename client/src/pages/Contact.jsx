@@ -1,102 +1,142 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
-import { FaFacebook, FaTwitter, FaLinkedin, FaInstagram } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaLinkedin, FaInstagram, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
 
 const Contact = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const [loading, setLoading] = React.useState(false);
 
   const onSubmit = async (data) => {
+    setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/contact', data);
-      toast.success(response.data.message);
+      const baseUrl = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000';
+      const response = await axios.post(`${baseUrl}/api/contact`, data);
+      toast.success(response.data.message || 'Message sent successfully!');
       reset();
     } catch (error) {
       toast.error('Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-16 bg-gradient-to-r from-blue-50 to-indigo-50 min-h-screen">
-      <h1 className="text-5xl font-extrabold text-center mb-16 text-indigo-800">Contact Us</h1>
-      
-      <div className="flex flex-col md:flex-row md:space-x-10">
-        {/* Contact Form */}
-        <div className="md:w-2/3 bg-white p-10 shadow-2xl rounded-lg transform transition-transform hover:scale-105">
-          <h2 className="text-3xl font-bold mb-8 text-indigo-800">Get in Touch</h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-lg font-medium text-gray-700">Name</label>
-              <input
-                {...register('name', { required: true })}
-                type="text"
-                id="name"
-                className={`mt-1 block w-full px-4 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-              />
-              {errors.name && <span className="text-red-500 text-sm">Name is required</span>}
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto space-y-3">
+        <Badge variant="indigo" size="sm">Get In Touch</Badge>
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Contact Us</h1>
+        <p className="text-slate-600 text-base">
+          Have questions or need assistance? Reach out to our support team.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Contact Form Card */}
+        <div className="lg:col-span-2 bg-white rounded-3xl p-8 border border-slate-200/80 shadow-md space-y-6">
+          <h2 className="text-2xl font-bold text-slate-900">Send Us a Message</h2>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-slate-700">Name</label>
+                <input
+                  {...register('name', { required: 'Name is required' })}
+                  type="text"
+                  id="name"
+                  placeholder="John Doe"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                />
+                {errors.name && <span className="text-rose-500 text-xs font-medium">{errors.name.message}</span>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-700">Email Address</label>
+                <input
+                  {...register('email', { required: 'Email is required' })}
+                  type="email"
+                  id="email"
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                />
+                {errors.email && <span className="text-rose-500 text-xs font-medium">{errors.email.message}</span>}
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-lg font-medium text-gray-700">Email</label>
-              <input
-                {...register('email', { required: true })}
-                type="email"
-                id="email"
-                className={`mt-1 block w-full px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-              />
-              {errors.email && <span className="text-red-500 text-sm">Email is required</span>}
-            </div>
-
-            <div>
-              <label htmlFor="message" className="block text-lg font-medium text-gray-700">Message</label>
+            <div className="space-y-1.5">
+              <label htmlFor="message" className="block text-xs font-bold uppercase tracking-wider text-slate-700">Message</label>
               <textarea
-                {...register('message', { required: true })}
+                {...register('message', { required: 'Message is required' })}
                 id="message"
-                rows="4"
-                className={`mt-1 block w-full px-4 py-2 border ${errors.message ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-              ></textarea>
-              {errors.message && <span className="text-red-500 text-sm">Message is required</span>}
+                rows={5}
+                placeholder="How can we help you?"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+              />
+              {errors.message && <span className="text-rose-500 text-xs font-medium">{errors.message.message}</span>}
             </div>
 
-            <button
+            <Button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-300"
+              variant="primary"
+              size="lg"
+              isLoading={loading}
+              className="w-full sm:w-auto shadow-lg shadow-indigo-600/30"
             >
-              Submit
-            </button>
+              Submit Message
+            </Button>
           </form>
         </div>
 
-        {/* Contact Details */}
-        <div className="md:w-1/3 bg-white p-10 shadow-2xl rounded-lg mt-10 md:mt-0 transform transition-transform hover:scale-105">
-          <h2 className="text-3xl font-bold mb-8 text-indigo-800">Contact Information</h2>
-          <p className="text-gray-700 mb-8 leading-relaxed">If you have any questions, feel free to reach out to us using the form or through the contact information below:</p>
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-800">Address:</h3>
-            <p className="text-gray-600">Bhandup West, Mumbai, Maharashtra, 400078</p>
+        {/* Contact Info Card */}
+        <div className="bg-slate-900 text-white rounded-3xl p-8 shadow-xl flex flex-col justify-between space-y-8">
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-white">Contact Information</h2>
+            <div className="space-y-4 text-sm text-slate-300">
+              <div className="flex items-start gap-3">
+                <FaMapMarkerAlt className="text-indigo-400 text-lg mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-white">Address</h4>
+                  <p className="text-xs text-slate-400">Bhandup West, Mumbai, Maharashtra, 400078</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <FaPhoneAlt className="text-indigo-400 text-lg mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-white">Phone</h4>
+                  <p className="text-xs text-slate-400">(91) 7303896794</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <FaEnvelope className="text-indigo-400 text-lg mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-white">Email</h4>
+                  <p className="text-xs text-slate-400">r2464300@gmail.com</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-800">Phone:</h3>
-            <p className="text-gray-600">(91) 7303896794</p>
-          </div>
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-800">Email:</h3>
-            <p className="text-gray-600">r2464300@gmail.com</p>
-          </div>
-          <div className="flex space-x-6 mt-6">
-            <a href="https://facebook.com" className="text-indigo-600 hover:text-indigo-800 transition duration-300">
-              <FaFacebook size={30} />
-            </a>
-            <a href="https://twitter.com" className="text-indigo-600 hover:text-indigo-800 transition duration-300">
-              <FaTwitter size={30} />
-            </a>
-            <a href="https://linkedin.com" className="text-indigo-600 hover:text-indigo-800 transition duration-300">
-              <FaLinkedin size={30} />
-            </a>
-            <a href="https://instagram.com" className="text-indigo-600 hover:text-indigo-800 transition duration-300">
-              <FaInstagram size={30} />
-            </a>
+
+          <div className="pt-6 border-t border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Social Channels</h4>
+            <div className="flex space-x-4">
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white flex items-center justify-center transition">
+                <FaFacebook size={18} />
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white flex items-center justify-center transition">
+                <FaTwitter size={18} />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white flex items-center justify-center transition">
+                <FaLinkedin size={18} />
+              </a>
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white flex items-center justify-center transition">
+                <FaInstagram size={18} />
+              </a>
+            </div>
           </div>
         </div>
       </div>

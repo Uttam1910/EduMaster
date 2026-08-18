@@ -2,12 +2,12 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-// const axiosInstance = axios.create({
-//   baseURL: 'https://edumaster-5vk1.onrender.com/api',
-//   withCredentials: true,
-// });
+const BASE_URL = import.meta.env.VITE_APP_API_URL
+  ? `${import.meta.env.VITE_APP_API_URL}/api`
+  : 'http://localhost:5000/api';
+
 const axiosInstance = axios.create({
-  baseURL: 'https://edumaster-5vk1.onrender.com/api',
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 

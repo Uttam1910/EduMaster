@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaBook, FaPlusCircle, FaCompass, FaEnvelope, FaInfoCircle } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaBook, FaPlusCircle, FaCompass, FaEnvelope, FaInfoCircle, FaTachometerAlt } from 'react-icons/fa';
 import { HiAcademicCap, HiChevronDown } from 'react-icons/hi2';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser, logout } from '../redux/slice/authSlice';
@@ -97,6 +97,11 @@ const HomeLayout = () => {
             <NavLink to="/" className={navLinkClass}>
               Home
             </NavLink>
+            {isLoggedIn && (
+              <NavLink to="/dashboard" className={navLinkClass}>
+                Dashboard
+              </NavLink>
+            )}
             <NavLink to="/courses" className={navLinkClass}>
               Courses
             </NavLink>
@@ -164,6 +169,14 @@ const HomeLayout = () => {
                     </div>
 
                     <div className="py-1">
+                      <NavLink
+                        to="/dashboard"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+                      >
+                        <FaTachometerAlt className="text-slate-400" />
+                        Dashboard
+                      </NavLink>
                       <NavLink
                         to="/profile"
                         onClick={() => setIsProfileDropdownOpen(false)}
@@ -237,6 +250,11 @@ const HomeLayout = () => {
             <NavLink to="/" className={mobileNavLinkClass}>
               <FaCompass /> Home
             </NavLink>
+            {isLoggedIn && (
+              <NavLink to="/dashboard" className={mobileNavLinkClass}>
+                <FaTachometerAlt /> Dashboard
+              </NavLink>
+            )}
             <NavLink to="/courses" className={mobileNavLinkClass}>
               <FaBook /> All Courses
             </NavLink>

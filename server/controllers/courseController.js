@@ -297,6 +297,11 @@ const enrollInCourse = async (req, res) => {
     course.enrolledStudents.push(userId);
     await course.save();
 
+    if (!user.enrolledCourses.includes(courseId)) {
+      user.enrolledCourses.push(courseId);
+      await user.save();
+    }
+
     res.status(200).json({ message: 'Successfully enrolled in the course', course });
   } catch (err) {
     console.error('Error enrolling in course:', err);
@@ -307,21 +312,63 @@ const enrollInCourse = async (req, res) => {
 
 
 
-// View Enrolled Courses
+// View Enrolled Courses with Progress Metadata
+const Progress = require('../models/progress');
+
 const viewEnrolledCourses = async (req, res) => {
   try {
-    // Get the user ID from the authenticated request
-    const userId = req.user._id; // Assuming req.user is set by your authentication middleware
+    const userId = req.user.id || req.user._id;
 
-    // Find the user by ID and populate the enrolled courses
+    // Find the user by ID and populate enrolled courses
     const user = await User.findById(userId).populate('enrolledCourses');
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Respond with the list of enrolled courses
-    res.status(200).json({ enrolledCourses: user.enrolledCourses });
+    const enrolledCourses = user.enrolledCourses || [];
+    const courseIds = enrolledCourses.map((c) => c._id);
+
+    // Fetch progress documents for all enrolled courses in one efficient query
+    const progressList = await Progress.find({
+      user: userId,
+      course: { $in: courseIds },
+    });
+
+    const progressMap = {};
+    progressList.forEach((p) => {
+      progressMap[p.course.toString()] = p;
+    });
+
+    // Merge progress into each course object
+    const enrichedEnrolledCourses = enrolledCourses.map((course) => {
+      const courseObj = course.toObject ? course.toObject() : course;
+      const prog = progressMap[course._id.toString()];
+
+      const totalLectures = courseObj.lectures?.length || courseObj.numberOfLectures || 0;
+      const completedLectures = prog?.completedLectures || [];
+      const completedCount = completedLectures.length;
+      const progressPercentage =
+        totalLectures > 0
+          ? Math.min(100, Math.round((completedCount / totalLectures) * 100))
+          : 0;
+
+      return {
+        ...courseObj,
+        progress: {
+          completedLectures,
+          completedCount,
+          totalLectures,
+          progressPercentage,
+          isCompleted: totalLectures > 0 && completedCount === totalLectures,
+          lastWatchedLecture: prog?.lastWatchedLecture || null,
+          lastPlaybackTime: prog?.lastPlaybackTime || 0,
+          updatedAt: prog?.updatedAt || courseObj.updatedAt,
+        },
+      };
+    });
+
+    res.status(200).json({ enrolledCourses: enrichedEnrolledCourses });
   } catch (err) {
     console.error('Error fetching enrolled courses:', err);
     res.status(500).json({ error: 'Failed to retrieve enrolled courses', details: err.message });

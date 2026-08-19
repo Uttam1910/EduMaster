@@ -14,62 +14,69 @@ import RequireAuth from './components/auth/RequireAuth';
 import CreateCourse from './pages/Courses/CreateCourse'; 
 import Profile from './pages/Profile/Profile';
 import UpdateAvatar from './pages/Profile/UpdateAvatar';
-import ProfileUpdate from './pages/Profile/ProfileUpdate'; // Corrected import path
+import ProfileUpdate from './pages/Profile/ProfileUpdate';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import ChangePassword from './pages/ChangePassword';
+import Dashboard from './pages/Dashboard';
 import TermsConditions from './pages/legal/TermsAndConditions';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import RefundsCancellations from './pages/legal/RefundsCancellations';
 
-
 function App() {
   return (
-
     <Routes>
       <Route path="/" element={<HomeLayout />}>
         <Route index element={<Home />} />
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
-        <Route path="/courses" element={<CourseList />} />
+        <Route path="courses" element={<CourseList />} />
         <Route path="courses/:courseId" element={<CourseDetail />} />
         <Route path="login" element={<Login />} />
-        <Route path="Signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/resetpassword/:token" element={<ResetPassword />} />
-        <Route path="/create-course" element={
+        <Route path="signup" element={<Signup />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="resetpassword/:token" element={<ResetPassword />} />
+        
+        {/* Protected Dashboard Route */}
+        <Route path="dashboard" element={
+          <RequireAuth roles={['student', 'admin']}>
+            <Dashboard />
+          </RequireAuth>
+        } />
+
+        <Route path="create-course" element={
           <RequireAuth roles={["admin"]}>
             <CreateCourse />
           </RequireAuth>
         } />
+        
         <Route path="profile" element={
           <RequireAuth roles={['student', 'admin']}>
             <Profile />
           </RequireAuth>
         } />
-         <Route path="/changepassword" element={
+        <Route path="changepassword" element={
           <RequireAuth roles={['student', 'admin']}>
             <ChangePassword />
           </RequireAuth>
         } />
-        <Route path="/update-avatar" element={
+        <Route path="update-avatar" element={
           <RequireAuth roles={['student', 'admin']}>
             <UpdateAvatar />
           </RequireAuth>
         } />
-        <Route path="/update-profile" element={
+        <Route path="update-profile" element={
           <RequireAuth roles={['student', 'admin']}>
             <ProfileUpdate />
           </RequireAuth>
         } />
-        <Route path="/terms-conditions" element={<TermsConditions />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/refunds-cancellations" element={<RefundsCancellations />} />
+        <Route path="terms-conditions" element={<TermsConditions />} />
+        <Route path="privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="refunds-cancellations" element={<RefundsCancellations />} />
       </Route>
-      <Route path="#" element={<AccessDenied />} />
+      <Route path="/access-denied" element={<AccessDenied />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
-
   );
 }
 

@@ -7,10 +7,7 @@ import CardSkeleton from '../components/ui/CardSkeleton';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { FaChalkboardTeacher, FaLaptopCode, FaCertificate, FaUsers, FaMobileAlt, FaBookOpen } from 'react-icons/fa';
-import { HiArrowRight, HiSparkles, HiAcademicCap, HiUserGroup, HiCheckBadge, HiPlay } from 'react-icons/hi2';
-import Slider from 'react-slick';
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
+import { HiArrowRight, HiSparkles, HiAcademicCap, HiCheckBadge, HiPlay } from 'react-icons/hi2';
 import { logoutUser, logout } from '../redux/slice/authSlice';
 
 const Home = () => {
@@ -18,6 +15,7 @@ const Home = () => {
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
   const dispatch = useDispatch();
   const [popularCourses, setPopularCourses] = useState([]);
+  const [totalCoursesCount, setTotalCoursesCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +25,7 @@ const Home = () => {
         const baseUrl = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000';
         const response = await axios.get(`${baseUrl}/api/courses`);
         if (response.data && Array.isArray(response.data)) {
+          setTotalCoursesCount(response.data.length);
           setPopularCourses(response.data.slice(0, 3));
         }
       } catch (error) {
@@ -45,33 +44,29 @@ const Home = () => {
     navigate('/');
   };
 
-  const testimonials = [
-    { name: 'Ravi Kumar', role: 'Full Stack Developer', testimonial: 'This platform transformed my learning journey. The structured projects helped me land my dream tech job!' },
-    { name: 'Aditi Sharma', role: 'Data Analyst', testimonial: 'The courses are clear, concise, and taught by industry experts. I could immediately apply what I learned.' },
-    { name: 'Rajesh Singh', role: 'DevOps Engineer', testimonial: 'Hands-down the best online learning platform. The interactive modules kept me consistently engaged.' },
-    { name: 'Priya Verma', role: 'UI/UX Designer', testimonial: 'The flexibility of self-paced learning combined with expert instructor guidance is unbeatable.' },
-    { name: 'Neha Agarwal', role: 'Software Engineer', testimonial: 'Fantastic learning ecosystem! Community support answered all my technical questions within hours.' },
+  const learningSteps = [
+    {
+      step: '01',
+      title: 'Discover & Enroll',
+      description: 'Explore our catalog of structured courses and enroll in the subject of your choice.',
+    },
+    {
+      step: '02',
+      title: 'Learn & Practice',
+      description: 'Watch video lectures, access lesson guides, and build practical exercises.',
+    },
+    {
+      step: '03',
+      title: 'Achieve & Advance',
+      description: 'Track your completion progress and gain production-ready technical skills.',
+    },
   ];
-
-  const sliderSettings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3500,
-    responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2 } },
-      { breakpoint: 640, settings: { slidesToShow: 1 } },
-    ],
-  };
 
   const features = [
     {
       icon: FaChalkboardTeacher,
       title: 'Expert Instructors',
-      description: 'Learn directly from industry leaders and senior software architects with real-world experience.',
+      description: 'Learn directly from industry leaders and developers with real-world experience.',
       color: 'bg-indigo-50 text-indigo-600',
     },
     {
@@ -82,20 +77,20 @@ const Home = () => {
     },
     {
       icon: FaCertificate,
-      title: 'Recognized Certifications',
-      description: 'Earn shareable credentials upon course completion to boost your professional portfolio.',
+      title: 'Recognized Credentials',
+      description: 'Earn course completion recognition to boost your professional portfolio.',
       color: 'bg-emerald-50 text-emerald-600',
     },
     {
       icon: FaUsers,
       title: 'Vibrant Community',
-      description: 'Collaborate with thousands of active learners, mentors, and peers in dedicated discussion channels.',
+      description: 'Collaborate with fellow active learners and educators in a supportive ecosystem.',
       color: 'bg-amber-50 text-amber-600',
     },
     {
       icon: FaMobileAlt,
       title: 'Flexible Learning',
-      description: 'Access courses anytime, anywhere on desktop, tablet, or mobile with automatic progress sync.',
+      description: 'Access courses anytime, anywhere on desktop, tablet, or mobile devices.',
       color: 'bg-sky-50 text-sky-600',
     },
     {
@@ -128,7 +123,7 @@ const Home = () => {
             </h1>
 
             <p className="text-lg sm:text-xl text-slate-300 font-normal leading-relaxed">
-              Explore production-ready courses curated by industry professionals. Build real projects, earn certificates, and advance your career today.
+              Explore production-ready courses curated by industry professionals. Build real projects, track your progress, and advance your career today.
             </p>
 
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -176,23 +171,23 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Quick Metrics Bar */}
+          {/* Real Dynamic Metrics Bar */}
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto pt-8 border-t border-slate-800 text-center">
             <div className="space-y-1">
-              <p className="text-3xl font-extrabold text-white">50+</p>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Expert Courses</p>
+              <p className="text-3xl font-extrabold text-white">{totalCoursesCount}</p>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Catalog Courses</p>
             </div>
             <div className="space-y-1">
-              <p className="text-3xl font-extrabold text-white">10K+</p>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Students</p>
+              <p className="text-3xl font-extrabold text-white">100%</p>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Self-Paced Access</p>
             </div>
             <div className="space-y-1">
-              <p className="text-3xl font-extrabold text-white">98%</p>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Satisfaction Rate</p>
+              <p className="text-3xl font-extrabold text-white">HD</p>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Video Modules</p>
             </div>
             <div className="space-y-1">
               <p className="text-3xl font-extrabold text-white">24/7</p>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Community Support</p>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Platform Availability</p>
             </div>
           </div>
         </div>
@@ -237,7 +232,7 @@ const Home = () => {
             <div>
               <Badge variant="violet" size="sm" className="mb-2">Top Programs</Badge>
               <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Popular Courses</h2>
-              <p className="text-slate-600 text-sm mt-1">Handpicked courses with highest student engagement.</p>
+              <p className="text-slate-600 text-sm mt-1">Explore top-rated technical courses available in our catalog.</p>
             </div>
             <Button variant="outline" size="md" onClick={() => navigate('/courses')}>
               <span>View All Catalog</span>
@@ -263,39 +258,26 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Student Testimonials Carousel */}
+      {/* How Learning Works Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <Badge variant="emerald" size="sm">Student Feedback</Badge>
+          <Badge variant="emerald" size="sm">Learning Workflow</Badge>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            What Our Learners Say
+            How EduMaster Works
           </h2>
           <p className="text-slate-600 text-base">
-            Real reviews from professionals who leveled up their skills with EduMaster.
+            Simple 3-step learning pathway to master any topic at your own speed.
           </p>
         </div>
 
-        <div className="px-2">
-          <Slider {...sliderSettings}>
-            {testimonials.map((item, index) => (
-              <div key={index} className="p-3">
-                <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between h-full space-y-4">
-                  <p className="text-slate-600 text-sm italic leading-relaxed">
-                    "{item.testimonial}"
-                  </p>
-                  <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
-                      {item.name.charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-sm">{item.name}</h4>
-                      <p className="text-xs text-slate-500">{item.role}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </Slider>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {learningSteps.map((item, idx) => (
+            <div key={idx} className="bg-white rounded-2xl p-8 border border-slate-200/80 shadow-xs space-y-4 relative">
+              <span className="text-4xl font-black text-indigo-100">{item.step}</span>
+              <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">{item.description}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -307,7 +289,7 @@ const Home = () => {
               Ready to Accelerate Your Career?
             </h2>
             <p className="text-indigo-100 text-base leading-relaxed">
-              Join thousands of students building their future today. Get instant access to expert-led courses.
+              Join our community of learners today. Get instant access to expert-led courses.
             </p>
             <div className="pt-2 flex flex-col sm:flex-row gap-4">
               {!isLoggedIn ? (

@@ -5,6 +5,8 @@ logs
 **/*.back.*
 
 node_modules
+dist
+.vercel
 bower_components
 
 *.sublime*
@@ -14,5 +16,3 @@ thumb
 sketch
 
 .env
-
-# End of https://mrkandreev.name/snippets/gitignore-generator/#react

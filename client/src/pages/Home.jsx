@@ -134,15 +134,15 @@ const Home = () => {
                     size="lg"
                     onClick={() => navigate('/signup')}
                     className="w-full sm:w-auto shadow-lg shadow-indigo-600/30"
+                    icon={HiArrowRight}
                   >
-                    <span>Get Started Free</span>
-                    <HiArrowRight className="text-lg" />
+                    Get Started Free
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="darkOutline"
                     size="lg"
                     onClick={() => navigate('/courses')}
-                    className="w-full sm:w-auto bg-slate-800/80 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white"
+                    className="w-full sm:w-auto"
                   >
                     Browse Catalog
                   </Button>
@@ -154,12 +154,12 @@ const Home = () => {
                     size="lg"
                     onClick={() => navigate('/courses')}
                     className="w-full sm:w-auto shadow-lg shadow-indigo-600/30"
+                    icon={HiArrowRight}
                   >
-                    <span>Explore All Courses</span>
-                    <HiArrowRight className="text-lg" />
+                    Explore All Courses
                   </Button>
                   <Button
-                    variant="secondary"
+                    variant="darkOutline"
                     size="lg"
                     onClick={() => navigate('/profile')}
                     className="w-full sm:w-auto"
@@ -294,19 +294,19 @@ const Home = () => {
             <div className="pt-2 flex flex-col sm:flex-row gap-4">
               {!isLoggedIn ? (
                 <Button
-                  variant="secondary"
+                  variant="white"
                   size="lg"
                   onClick={() => navigate('/signup')}
-                  className="bg-white text-slate-900 hover:bg-slate-100"
+                  icon={HiArrowRight}
                 >
                   Create Free Account
                 </Button>
               ) : (
                 <Button
-                  variant="secondary"
+                  variant="white"
                   size="lg"
                   onClick={() => navigate('/courses')}
-                  className="bg-white text-slate-900 hover:bg-slate-100"
+                  icon={HiArrowRight}
                 >
                   Browse Course Catalog
                 </Button>

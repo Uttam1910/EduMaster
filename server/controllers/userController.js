@@ -10,6 +10,11 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+// Attempt to drop legacy unique index on username if it exists in MongoDB
+User.collection.dropIndex("username_1").catch(() => {
+  // Index didn't exist or already dropped
+});
+
 // Nodemailer transporter configuration
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -24,22 +29,23 @@ const transporter = nodemailer.createTransport({
 exports.register = async (req, res) => {
   const { username, email, password, role } = req.body;
 
-  console.log('Registering user:', { username, email, role }); // Debug log
-
   try {
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "Please fill in all required fields (username, email, password)." });
+    }
+
+    // Only email needs to be unique. Names can be duplicated.
+    const emailExists = await User.findOne({ email: email.toLowerCase() });
+    if (emailExists) {
+      return res.status(400).json({ message: "An account with this email address already exists." });
     }
 
     const user = new User({
-      username,
-      email,
+      username: username.trim(),
+      email: email.toLowerCase().trim(),
       password,
-      role: role || "student", // Default role to 'student' if not specified
+      role: role || "student",
     });
-
-    console.log('User data before saving:', user); // Debug log
 
     await user.save();
 
@@ -59,12 +65,13 @@ exports.register = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Registration error:', error); // Debug log
-    res.status(500).json({ message: "Server error" });
+    console.error('Registration error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "An account with this email address already exists." });
+    }
+    res.status(500).json({ message: error.message || "Failed to register user. Please try again." });
   }
 };
-
-
 
 // Log in a user
 exports.login = async (req, res) => {
@@ -72,21 +79,21 @@ exports.login = async (req, res) => {
 
   try {
     if (!email || !password) {
-      return res.status(400).json({ message: "Please provide email and password" });
+      return res.status(400).json({ message: "Please provide both email and password." });
     }
 
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select("+password");
     if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: "Invalid email or password. Please check your credentials." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: "Invalid email or password. Please check your credentials." });
     }
 
     if (user.isActive === false) {
-      return res.status(403).json({ message: "Your account is inactive. Please contact support." });
+      return res.status(403).json({ message: "Your account is currently inactive. Please contact support." });
     }
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
@@ -109,8 +116,8 @@ exports.login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error); // Debug log
-    res.status(500).json({ message: "Server error" });
+    console.error("Login error:", error);
+    res.status(500).json({ message: error.message || "Login failed due to a server error. Please try again." });
   }
 };
 
@@ -134,7 +141,6 @@ exports.viewProfile = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 // Middleware to authenticate user
 exports.authenticateUser = (req, res, next) => {
@@ -192,8 +198,6 @@ exports.uploadAvatar = async (req, res) => {
       .json({ message: "Error uploading avatar", error: error.message });
   }
 };
-
-
 
 // Forgot Password
 exports.forgotPassword = async (req, res) => {
@@ -266,58 +270,10 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// exports.updateProfile = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-//     const { username, email, password, avatar } = req.body;
-
-//     // Check if the email is already in use
-//     if (email) {
-//       const emailExists = await User.findOne({ email });
-//       if (emailExists && emailExists._id.toString() !== userId.toString()) {
-//         return res.status(400).json({ message: "Email already in use" });
-//       }
-//     }
-
-//     // Update the user's profile
-//     const updatedFields = { username, email };
-
-//     if (password) {
-//       const salt = await bcrypt.genSalt(10);
-//       updatedFields.password = await bcrypt.hash(password, salt);
-//     }
-
-//     if (avatar) {
-//       const result = await cloudinary.uploader.upload(avatar, {
-//         folder: "avatars",
-//         width: 150,
-//         crop: "scale",
-//       });
-
-//       updatedFields.avatar = {
-//         public_id: result.public_id,
-//         secure_url: result.secure_url,
-//       };
-//     }
-
-//     const updatedUser = await User.findByIdAndUpdate(userId, updatedFields, {
-//       new: true,
-//       runValidators: true,
-//     }).select("-password");
-
-//     res.status(200).json(updatedUser);
-//   } catch (error) {
-//     console.error("Error updating profile:", error.message);
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
-
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
     const { username, email, password } = req.body;
-    let avatarUrl;
 
     // Check if the email is already in use
     if (email) {

@@ -1,4 +1,3 @@
-// axiosInstance.js
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
@@ -10,7 +9,6 @@ const axiosInstance = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
 });
-
 
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -26,13 +24,22 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      if (error.response.data.message === 'Token expired') {
+    const isAuthRoute =
+      error.config?.url?.includes('/users/login') ||
+      error.config?.url?.includes('/users/register');
+
+    if (error.response && error.response.status === 401 && !isAuthRoute) {
+      if (error.response.data?.message === 'Token expired') {
         toast.error('Session expired. Please log in again.');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
       } else {
         toast.error('Unauthorized access. Please log in.');
+      }
+      localStorage.removeItem('token');
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+
+      if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }

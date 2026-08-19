@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../../helpers/axiosInstance';
 import { toast } from 'react-hot-toast';
 
-// Helper function to parse JSON safely
 function tryParseJson(jsonString) {
   try {
     return JSON.parse(jsonString);
@@ -81,7 +80,6 @@ export const fetchUserProfile = createAsyncThunk(
   }
 );
 
-// New async thunk for updating user avatar
 export const updateUserAvatar = createAsyncThunk(
   'auth/updateUserAvatar',
   async (formData, { rejectWithValue }) => {
@@ -117,6 +115,7 @@ const authSlice = createSlice({
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('user');
       localStorage.removeItem('role');
+      localStorage.removeItem('token');
     },
     setUser(state, action) {
       state.user = action.payload;
@@ -136,21 +135,11 @@ const authSlice = createSlice({
         state.isLoggedIn = true;
         state.user = action.payload.user;
         state.role = action.payload.role;
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
-        localStorage.setItem('role', action.payload.role);
-        toast.success(
-          action.payload.role === 'admin'
-            ? 'Admin registration successful'
-            : 'User registration successful'
-        );
+        state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Something went wrong';
-        toast.error(
-          action.payload?.message || 'Registration failed. Please try again.'
-        );
+        state.error = action.payload?.message || action.payload || 'Registration failed';
       })
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
@@ -161,21 +150,11 @@ const authSlice = createSlice({
         state.isLoggedIn = true;
         state.user = action.payload.user;
         state.role = action.payload.role;
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
-        localStorage.setItem('role', action.payload.role);
-        toast.success(
-          action.payload.role === 'admin'
-            ? 'Admin login successful'
-            : 'User login successful'
-        );
+        state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Login failed. Please try again.';
-        toast.error(
-          action.payload?.message || 'Login failed. Please try again.'
-        );
+        state.error = action.payload?.message || action.payload || 'Login failed';
       })
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
@@ -186,17 +165,10 @@ const authSlice = createSlice({
         state.isLoggedIn = false;
         state.user = null;
         state.role = null;
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('user');
-        localStorage.removeItem('role');
-        toast.success('Logout successful');
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Logout failed. Please try again.';
-        toast.error(
-          action.payload?.message || 'Logout failed. Please try again.'
-        );
+        state.error = action.payload?.message || action.payload || 'Logout failed';
       })
       .addCase(fetchUserProfile.pending, (state) => {
         state.loading = true;
@@ -208,12 +180,8 @@ const authSlice = createSlice({
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to fetch user profile';
-        toast.error(
-          action.payload?.message || 'Failed to fetch user profile. Please try again.'
-        );
+        state.error = action.payload?.message || action.payload || 'Failed to fetch user profile';
       })
-      // Add cases for updateUserAvatar
       .addCase(updateUserAvatar.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -224,14 +192,10 @@ const authSlice = createSlice({
           state.user.avatar = action.payload;
           localStorage.setItem('user', JSON.stringify(state.user));
         }
-        toast.success('Avatar updated successfully');
       })
       .addCase(updateUserAvatar.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Avatar update failed. Please try again.';
-        toast.error(
-          action.payload?.message || 'Avatar update failed. Please try again.'
-        );
+        state.error = action.payload?.message || action.payload || 'Avatar update failed';
       });
   },
 });

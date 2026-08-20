@@ -1,35 +1,44 @@
-
-
-// middleware/authenticateUser.js
+// middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+const prisma = require('../config/prismaClient');
 
 const authMiddleware = async (req, res, next) => {
   let token;
 
-  // Check if token is provided in the Authorization header
+  // Check if token is provided in the Authorization header or cookies
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      // Extract the token from the header
-      token = req.headers.authorization.split(' ')[1];
-      
-      // Verify the token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      // Find the user by ID and exclude the password
-      req.user = await User.findById(decoded.id).select('-password');
-      
-      // Proceed to the next middleware or route handler
-      next();
-    } catch (error) {
-      console.error('Error while verifying token:', error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
-    }
+    token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
   }
 
-  // If no token is provided, respond with an error
   if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ message: 'Not authorized, no token' });
+  }
+
+  try {
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Find the user by ID
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized, user not found' });
+    }
+
+    const { password, forgotPasswordToken, forgotPasswordExpires, ...userWithoutPassword } = user;
+    req.user = {
+      ...userWithoutPassword,
+      _id: user.id,
+    };
+    
+    next();
+  } catch (error) {
+    console.error('Error while verifying token:', error.message);
+    return res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };
 

@@ -56,7 +56,7 @@ router.get('/enrolled', authMiddleware, roleMiddleware('student'), courseControl
 router.get('/:courseId/students', authMiddleware, adminMiddleware, courseController.viewEnrolledStudents);
 
 // Enroll in a course
-router.post('/:courseId/enroll', roleMiddleware('student'), courseController.enrollInCourse);
+router.post('/:courseId/enroll', authMiddleware, roleMiddleware('student'), courseController.enrollInCourse);
 
 // --- Progress Tracking & Resume Learning Routes ---
 // Get progress for a course
@@ -79,4 +79,5 @@ router.post(
 // Endpoint to get a course by ID
 router.get('/:courseId', courseController.getCourseById);
 
+// Export router
 module.exports = router;

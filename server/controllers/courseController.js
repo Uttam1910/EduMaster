@@ -1,10 +1,47 @@
 // controllers/courseController.js
 const cloudinary = require('../config/cloudinary');
 const fs = require('fs');
-const path = require('path');
-const Course = require('../models/course');
-const User = require('../models/user');
-const Progress = require('../models/progress');
+const prisma = require('../config/prismaClient');
+
+// Helper to format course object into backward-compatible API response
+const formatCourseResponse = (course) => {
+  if (!course) return null;
+
+  const lectures = (course.lectures || []).map((l) => ({
+    _id: l.id,
+    id: l.id,
+    title: l.title,
+    description: l.description,
+    lecture: {
+      public_id: l.publicId,
+      secure_url: l.secureUrl,
+    },
+    public_id: l.publicId,
+    secure_url: l.secureUrl,
+    orderIndex: l.orderIndex,
+  }));
+
+  const enrolledStudents = (course.enrollments || []).map((e) => e.userId);
+
+  return {
+    _id: course.id,
+    id: course.id,
+    title: course.title,
+    description: course.description,
+    category: course.category,
+    createdBy: course.createdBy || 'EduMaster Admin',
+    createdById: course.createdById,
+    numberOfLectures: course.numberOfLectures || lectures.length,
+    thumbnail: {
+      public_id: course.thumbnailPublicId || 'default_thumbnail_id',
+      secure_url: course.thumbnailSecureUrl || 'default_thumbnail_url',
+    },
+    lectures,
+    enrolledStudents,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+  };
+};
 
 const uploadThumbnail = async (req, res, next) => {
   if (!req.file) {
@@ -41,22 +78,33 @@ const uploadThumbnail = async (req, res, next) => {
 
 const createCourse = async (req, res) => {
   const { title, description, category, thumbnail, createdBy } = req.body;
+  const userId = req.user?.id || req.user?._id;
 
   try {
-    const newCourse = new Course({
-      title,
-      description,
-      category,
-      thumbnail,
-      createdBy,
+    const newCourse = await prisma.course.create({
+      data: {
+        title: title.trim(),
+        description: description.trim(),
+        category: category.trim(),
+        thumbnailPublicId: thumbnail?.public_id || 'default_thumbnail_id',
+        thumbnailSecureUrl: thumbnail?.secure_url || 'default_thumbnail_url',
+        createdBy: createdBy ? createdBy.trim() : req.user?.username || 'EduMaster Admin',
+        createdById: userId || null,
+        numberOfLectures: 0,
+      },
+      include: {
+        lectures: true,
+        enrollments: true,
+      },
     });
 
-    await newCourse.save();
-
-    res.status(201).json({ message: 'Course created successfully', course: newCourse });
+    res.status(201).json({
+      message: 'Course created successfully',
+      course: formatCourseResponse(newCourse),
+    });
   } catch (error) {
     console.error('Error creating course:', error);
-    res.status(500).json({ message: 'Failed to create course' });
+    res.status(500).json({ message: 'Failed to create course', error: error.message });
   }
 };
 
@@ -65,29 +113,42 @@ const updateCourse = async (req, res) => {
   const { title, description, category, thumbnail, createdBy } = req.body;
 
   try {
-    const course = await Course.findById(courseId);
-    if (!course) {
+    const existingCourse = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lectures: true, enrollments: true },
+    });
+
+    if (!existingCourse) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    course.title = title || course.title;
-    course.description = description || course.description;
-    course.category = category || course.category;
-    course.createdBy = createdBy || course.createdBy;
+    const updateData = {};
+    if (title) updateData.title = title.trim();
+    if (description) updateData.description = description.trim();
+    if (category) updateData.category = category.trim();
+    if (createdBy) updateData.createdBy = createdBy.trim();
 
     if (thumbnail) {
-      if (course.thumbnail?.public_id) {
-        await cloudinary.uploader.destroy(course.thumbnail.public_id).catch(() => {});
+      if (existingCourse.thumbnailPublicId && existingCourse.thumbnailPublicId !== 'default_thumbnail_id') {
+        await cloudinary.uploader.destroy(existingCourse.thumbnailPublicId).catch(() => {});
       }
-      course.thumbnail = thumbnail;
+      updateData.thumbnailPublicId = thumbnail.public_id;
+      updateData.thumbnailSecureUrl = thumbnail.secure_url;
     }
 
-    await course.save();
+    const updatedCourse = await prisma.course.update({
+      where: { id: courseId },
+      data: updateData,
+      include: { lectures: true, enrollments: true },
+    });
 
-    res.status(200).json({ message: 'Course updated successfully', course });
+    res.status(200).json({
+      message: 'Course updated successfully',
+      course: formatCourseResponse(updatedCourse),
+    });
   } catch (error) {
     console.error('Error updating course:', error);
-    res.status(500).json({ message: 'Failed to update course' });
+    res.status(500).json({ message: 'Failed to update course', error: error.message });
   }
 };
 
@@ -95,21 +156,33 @@ const deleteCourse = async (req, res) => {
   const { courseId } = req.params;
 
   try {
-    const course = await Course.findById(courseId);
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lectures: true },
+    });
+
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    if (course.thumbnail?.public_id) {
-      await cloudinary.uploader.destroy(course.thumbnail.public_id).catch(() => {});
+    if (course.thumbnailPublicId && course.thumbnailPublicId !== 'default_thumbnail_id') {
+      await cloudinary.uploader.destroy(course.thumbnailPublicId).catch(() => {});
     }
 
-    await Course.findByIdAndDelete(courseId);
+    for (const lecture of course.lectures) {
+      if (lecture.publicId) {
+        await cloudinary.uploader.destroy(lecture.publicId, { resource_type: 'video' }).catch(() => {});
+      }
+    }
+
+    await prisma.course.delete({
+      where: { id: courseId },
+    });
 
     res.status(200).json({ message: 'Course deleted successfully' });
   } catch (error) {
     console.error('Error deleting course:', error);
-    res.status(500).json({ message: 'Failed to delete course' });
+    res.status(500).json({ message: 'Failed to delete course', error: error.message });
   }
 };
 
@@ -120,6 +193,15 @@ const addLecture = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Video file not uploaded' });
+    }
+
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lectures: true, enrollments: true },
+    });
+
+    if (!course) {
+      return res.status(404).json({ error: 'Course not found' });
     }
 
     const result = await cloudinary.uploader.upload(req.file.path, {
@@ -133,31 +215,36 @@ const addLecture = async (req, res) => {
       throw new Error('Missing secure_url or public_id from Cloudinary response');
     }
 
-    const course = await Course.findById(courseId);
-
-    if (!course) {
-      return res.status(404).json({ error: 'Course not found' });
-    }
-
-    const newLecture = {
-      title,
-      description,
-      lecture: {
-        public_id,
-        secure_url,
+    await prisma.lecture.create({
+      data: {
+        courseId,
+        title: title ? title.trim() : 'Untitled Lecture',
+        description: description ? description.trim() : '',
+        publicId: public_id,
+        secureUrl: secure_url,
+        orderIndex: course.lectures.length + 1,
       },
-    };
+    });
 
-    course.lectures.push(newLecture);
-    course.numberOfLectures = course.lectures.length;
-
-    await course.save();
+    const updatedCourse = await prisma.course.update({
+      where: { id: courseId },
+      data: {
+        numberOfLectures: course.lectures.length + 1,
+      },
+      include: {
+        lectures: { orderBy: { orderIndex: 'asc' } },
+        enrollments: true,
+      },
+    });
 
     if (fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
 
-    res.status(201).json({ message: 'Lecture added successfully', course });
+    res.status(201).json({
+      message: 'Lecture added successfully',
+      course: formatCourseResponse(updatedCourse),
+    });
   } catch (err) {
     console.error('Error adding lecture:', err);
     res.status(500).json({ error: 'Failed to add lecture', details: err.message });
@@ -168,13 +255,31 @@ const viewEnrolledStudents = async (req, res) => {
   const { courseId } = req.params;
 
   try {
-    const course = await Course.findById(courseId).populate('enrolledStudents', 'username email');
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+    });
 
     if (!course) {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    res.status(200).json({ students: course.enrolledStudents });
+    const enrollments = await prisma.courseEnrollment.findMany({
+      where: { courseId },
+      include: {
+        user: {
+          select: { id: true, username: true, email: true },
+        },
+      },
+    });
+
+    const students = enrollments.map((e) => ({
+      _id: e.user.id,
+      id: e.user.id,
+      username: e.user.username,
+      email: e.user.email,
+    }));
+
+    res.status(200).json({ students });
   } catch (err) {
     console.error('Error fetching enrolled students:', err);
     res.status(500).json({ error: 'Failed to fetch enrolled students' });
@@ -183,8 +288,16 @@ const viewEnrolledStudents = async (req, res) => {
 
 const viewAvailableCourses = async (req, res) => {
   try {
-    const courses = await Course.find();
-    res.status(200).json(courses || []);
+    const courses = await prisma.course.findMany({
+      include: {
+        lectures: { orderBy: { orderIndex: 'asc' } },
+        enrollments: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const formattedCourses = courses.map(formatCourseResponse);
+    res.status(200).json(formattedCourses || []);
   } catch (err) {
     console.error('Error fetching courses:', err);
     res.status(500).json({ error: 'Failed to fetch courses' });
@@ -193,10 +306,14 @@ const viewAvailableCourses = async (req, res) => {
 
 const enrollInCourse = async (req, res) => {
   const { courseId } = req.params;
-  const userId = req.user.id || req.user._id;
+  const userId = req.user?.id || req.user?._id;
 
   try {
-    const user = await User.findById(userId);
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -206,33 +323,62 @@ const enrollInCourse = async (req, res) => {
       return res.status(403).json({ error: 'Only students can enroll in courses' });
     }
 
-    const course = await Course.findById(courseId);
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lectures: true, enrollments: true },
+    });
 
     if (!course) {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    const isAlreadyEnrolled = course.enrolledStudents.some(
-      (id) => id.toString() === userId.toString()
-    );
+    const existingEnrollment = await prisma.courseEnrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId,
+        },
+      },
+    });
 
-    if (isAlreadyEnrolled) {
+    if (existingEnrollment) {
       return res.status(400).json({ error: 'User is already enrolled in this course' });
     }
 
-    course.enrolledStudents.push(userId);
-    await course.save();
+    await prisma.courseEnrollment.create({
+      data: {
+        userId,
+        courseId,
+      },
+    });
 
-    const isUserCourseRecorded = user.enrolledCourses.some(
-      (id) => id.toString() === courseId.toString()
-    );
+    // Create initial Progress record if none exists
+    const existingProgress = await prisma.progress.findUnique({
+      where: {
+        userId_courseId: { userId, courseId },
+      },
+    });
 
-    if (!isUserCourseRecorded) {
-      user.enrolledCourses.push(courseId);
-      await user.save();
+    if (!existingProgress) {
+      await prisma.progress.create({
+        data: {
+          userId,
+          courseId,
+          progressPercentage: 0,
+          isCompleted: false,
+        },
+      });
     }
 
-    res.status(200).json({ message: 'Successfully enrolled in the course', course });
+    const updatedCourse = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lectures: true, enrollments: true },
+    });
+
+    res.status(200).json({
+      message: 'Successfully enrolled in the course',
+      course: formatCourseResponse(updatedCourse),
+    });
   } catch (err) {
     console.error('Error enrolling in course:', err);
     res.status(500).json({ error: 'Failed to enroll in course', details: err.message });
@@ -241,34 +387,48 @@ const enrollInCourse = async (req, res) => {
 
 const viewEnrolledCourses = async (req, res) => {
   try {
-    const userId = req.user.id || req.user._id;
+    const userId = req.user?.id || req.user?._id;
 
-    const user = await User.findById(userId).populate('enrolledCourses');
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const enrolledCourses = user.enrolledCourses || [];
-    const courseIds = enrolledCourses.map((c) => c._id);
+    const enrollments = await prisma.courseEnrollment.findMany({
+      where: { userId },
+      include: {
+        course: {
+          include: {
+            lectures: { orderBy: { orderIndex: 'asc' } },
+            enrollments: true,
+          },
+        },
+      },
+    });
 
-    const progressList = await Progress.find({
-      user: userId,
-      course: { $in: courseIds },
+    const courseIds = enrollments.map((e) => e.courseId);
+
+    const progressList = await prisma.progress.findMany({
+      where: {
+        userId,
+        courseId: { in: courseIds },
+      },
+      include: {
+        completedLectures: true,
+      },
     });
 
     const progressMap = {};
     progressList.forEach((p) => {
-      progressMap[p.course.toString()] = p;
+      progressMap[p.courseId] = p;
     });
 
-    const enrichedEnrolledCourses = enrolledCourses.map((course) => {
-      const courseObj = course.toObject ? course.toObject() : course;
-      const prog = progressMap[course._id.toString()];
+    const enrichedEnrolledCourses = enrollments.map((e) => {
+      const courseObj = formatCourseResponse(e.course);
+      const prog = progressMap[e.courseId];
 
       const totalLectures = courseObj.lectures?.length || courseObj.numberOfLectures || 0;
-      const completedLectures = prog?.completedLectures || [];
-      const completedCount = completedLectures.length;
+      const completedLectureIds = (prog?.completedLectures || []).map((cl) => cl.lectureId);
+      const completedCount = completedLectureIds.length;
       const progressPercentage =
         totalLectures > 0
           ? Math.min(100, Math.round((completedCount / totalLectures) * 100))
@@ -277,12 +437,12 @@ const viewEnrolledCourses = async (req, res) => {
       return {
         ...courseObj,
         progress: {
-          completedLectures,
+          completedLectures: completedLectureIds,
           completedCount,
           totalLectures,
           progressPercentage,
           isCompleted: totalLectures > 0 && completedCount === totalLectures,
-          lastWatchedLecture: prog?.lastWatchedLecture || null,
+          lastWatchedLecture: prog?.lastWatchedLectureId || null,
           lastPlaybackTime: prog?.lastPlaybackTime || 0,
           updatedAt: prog?.updatedAt || courseObj.updatedAt,
         },
@@ -298,14 +458,21 @@ const viewEnrolledCourses = async (req, res) => {
 
 const getCourseById = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.courseId);
+    const course = await prisma.course.findUnique({
+      where: { id: req.params.courseId },
+      include: {
+        lectures: { orderBy: { orderIndex: 'asc' } },
+        enrollments: true,
+      },
+    });
 
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    res.status(200).json(course);
+    res.status(200).json(formatCourseResponse(course));
   } catch (error) {
+    console.error('Error getting course by ID:', error);
     res.status(500).json({ message: error.message });
   }
 };

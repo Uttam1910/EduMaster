@@ -1,5 +1,5 @@
-const Course = require('../models/course');
-const Progress = require('../models/progress');
+// controllers/progressController.js
+const prisma = require('../config/prismaClient');
 
 /**
  * Toggle or set completion status for a specific lecture
@@ -8,29 +8,40 @@ const Progress = require('../models/progress');
 const toggleLectureCompletion = async (req, res) => {
   try {
     const { courseId, lectureId } = req.params;
-    const userId = req.user.id || req.user._id;
+    const userId = req.user?.id || req.user?._id;
 
-    // 1. Verify Course Exists
-    const course = await Course.findById(courseId);
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    // 1. Verify Course Exists & Get Lectures
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lectures: { orderBy: { orderIndex: 'asc' } } },
+    });
+
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
     // 2. Verify User Enrollment
-    const isEnrolled = course.enrolledStudents.some(
-      (id) => id.toString() === userId.toString()
-    );
+    const enrollment = await prisma.courseEnrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId,
+        },
+      },
+    });
 
-    if (!isEnrolled) {
+    if (!enrollment && req.user.role !== 'admin') {
       return res.status(403).json({
         message: 'You must be enrolled in this course to record completion progress.',
       });
     }
 
     // 3. Verify Lecture Belongs to Course
-    const targetLecture = course.lectures.find(
-      (l) => l._id.toString() === lectureId.toString()
-    );
+    const targetLecture = course.lectures.find((l) => l.id === lectureId);
 
     if (!targetLecture) {
       return res.status(404).json({
@@ -38,88 +49,110 @@ const toggleLectureCompletion = async (req, res) => {
       });
     }
 
-    // 4. Find or Initialize Progress Document
-    let progress = await Progress.findOne({ user: userId, course: courseId });
+    // 4. Find or Create Progress Document
+    let progress = await prisma.progress.findUnique({
+      where: {
+        userId_courseId: { userId, courseId },
+      },
+      include: {
+        completedLectures: true,
+      },
+    });
+
     if (!progress) {
-      progress = new Progress({
-        user: userId,
-        course: courseId,
-        completedLectures: [],
+      progress = await prisma.progress.create({
+        data: {
+          userId,
+          courseId,
+          progressPercentage: 0,
+          isCompleted: false,
+        },
+        include: {
+          completedLectures: true,
+        },
       });
     }
 
-    // 5. Toggle or Set Completion State
-    const alreadyCompletedIndex = progress.completedLectures.findIndex(
-      (id) => id.toString() === lectureId.toString()
+    // 5. Check existing completion status in junction table
+    const existingCompletion = progress.completedLectures.find(
+      (cl) => cl.lectureId === lectureId
     );
 
     const { markComplete, lastPlaybackTime } = req.body;
 
+    let shouldComplete = false;
     if (markComplete === true) {
-      if (alreadyCompletedIndex === -1) {
-        progress.completedLectures.push(targetLecture._id);
-      }
+      shouldComplete = true;
     } else if (markComplete === false) {
-      if (alreadyCompletedIndex !== -1) {
-        progress.completedLectures.splice(alreadyCompletedIndex, 1);
-      }
+      shouldComplete = false;
     } else {
-      // Toggle if no explicit boolean provided
-      if (alreadyCompletedIndex !== -1) {
-        progress.completedLectures.splice(alreadyCompletedIndex, 1);
-      } else {
-        progress.completedLectures.push(targetLecture._id);
-      }
+      // Toggle state
+      shouldComplete = !existingCompletion;
     }
 
-    // 6. Filter Out Any Stale/Deleted Lecture IDs & Recalculate
-    const validCourseLectureIds = new Set(
-      course.lectures.map((l) => l._id.toString())
-    );
-
-    const validCompleted = progress.completedLectures.filter((id) =>
-      validCourseLectureIds.has(id.toString())
-    );
-
-    progress.completedLectures = validCompleted;
-    progress.lastWatchedLecture = targetLecture._id;
-    if (typeof lastPlaybackTime === 'number' && lastPlaybackTime >= 0) {
-      progress.lastPlaybackTime = lastPlaybackTime;
+    if (shouldComplete && !existingCompletion) {
+      await prisma.lectureCompletion.create({
+        data: {
+          progressId: progress.id,
+          lectureId,
+        },
+      });
+    } else if (!shouldComplete && existingCompletion) {
+      await prisma.lectureCompletion.delete({
+        where: {
+          id: existingCompletion.id,
+        },
+      });
     }
+
+    // Fetch updated completion list
+    const updatedCompletions = await prisma.lectureCompletion.findMany({
+      where: { progressId: progress.id },
+    });
+
+    const validLectureIds = new Set(course.lectures.map((l) => l.id));
+    const validCompletedIds = updatedCompletions
+      .map((cl) => cl.lectureId)
+      .filter((id) => validLectureIds.has(id));
 
     const totalLectures = course.lectures.length;
-    const completedCount = validCompleted.length;
+    const completedCount = validCompletedIds.length;
+
+    let progressPercentage = 0;
+    let isCompleted = false;
 
     if (totalLectures > 0) {
-      progress.progressPercentage = Math.min(
-        100,
-        Math.round((completedCount / totalLectures) * 100)
-      );
-      progress.isCompleted = completedCount === totalLectures;
-    } else {
-      progress.progressPercentage = 0;
-      progress.isCompleted = false;
+      progressPercentage = Math.min(100, Math.round((completedCount / totalLectures) * 100));
+      isCompleted = completedCount === totalLectures;
     }
 
-    if (progress.isCompleted) {
-      progress.completedAt = progress.completedAt || new Date();
-    } else {
-      progress.completedAt = null;
+    const updateData = {
+      lastWatchedLectureId: targetLecture.id,
+      progressPercentage,
+      isCompleted,
+      completedAt: isCompleted ? progress.completedAt || new Date() : null,
+    };
+
+    if (typeof lastPlaybackTime === 'number' && lastPlaybackTime >= 0) {
+      updateData.lastPlaybackTime = Math.floor(lastPlaybackTime);
     }
 
-    await progress.save();
+    const finalProgress = await prisma.progress.update({
+      where: { id: progress.id },
+      data: updateData,
+    });
 
     return res.status(200).json({
       message: 'Progress updated successfully',
       progress: {
-        courseId: course._id,
-        completedLectures: progress.completedLectures,
+        courseId: course.id,
+        completedLectures: validCompletedIds,
         completedCount,
         totalLectures,
-        progressPercentage: progress.progressPercentage,
-        isCompleted: progress.isCompleted,
-        lastWatchedLecture: progress.lastWatchedLecture,
-        lastPlaybackTime: progress.lastPlaybackTime,
+        progressPercentage,
+        isCompleted,
+        lastWatchedLecture: finalProgress.lastWatchedLectureId,
+        lastPlaybackTime: finalProgress.lastPlaybackTime,
       },
     });
   } catch (error) {
@@ -139,26 +172,34 @@ const recordLastWatched = async (req, res) => {
   try {
     const { courseId, lectureId } = req.params;
     const { lastPlaybackTime } = req.body;
-    const userId = req.user.id || req.user._id;
+    const userId = req.user?.id || req.user?._id;
 
-    const course = await Course.findById(courseId);
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lectures: true },
+    });
+
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    const isEnrolled = course.enrolledStudents.some(
-      (id) => id.toString() === userId.toString()
-    );
+    const enrollment = await prisma.courseEnrollment.findUnique({
+      where: {
+        userId_courseId: { userId, courseId },
+      },
+    });
 
-    if (!isEnrolled) {
+    if (!enrollment && req.user.role !== 'admin') {
       return res.status(403).json({
         message: 'Must be enrolled to record last watched position.',
       });
     }
 
-    const targetLecture = course.lectures.find(
-      (l) => l._id.toString() === lectureId.toString()
-    );
+    const targetLecture = course.lectures.find((l) => l.id === lectureId);
 
     if (!targetLecture) {
       return res.status(404).json({
@@ -166,27 +207,33 @@ const recordLastWatched = async (req, res) => {
       });
     }
 
-    let progress = await Progress.findOne({ user: userId, course: courseId });
-    if (!progress) {
-      progress = new Progress({
-        user: userId,
-        course: courseId,
-        completedLectures: [],
-      });
-    }
+    const lastPlayback = typeof lastPlaybackTime === 'number' && lastPlaybackTime >= 0
+      ? Math.floor(lastPlaybackTime)
+      : 0;
 
-    progress.lastWatchedLecture = targetLecture._id;
-    if (typeof lastPlaybackTime === 'number' && lastPlaybackTime >= 0) {
-      progress.lastPlaybackTime = Math.floor(lastPlaybackTime);
-    }
-
-    await progress.save();
+    const progress = await prisma.progress.upsert({
+      where: {
+        userId_courseId: { userId, courseId },
+      },
+      update: {
+        lastWatchedLectureId: targetLecture.id,
+        lastPlaybackTime: lastPlayback,
+      },
+      create: {
+        userId,
+        courseId,
+        lastWatchedLectureId: targetLecture.id,
+        lastPlaybackTime: lastPlayback,
+        progressPercentage: 0,
+        isCompleted: false,
+      },
+    });
 
     return res.status(200).json({
       message: 'Last watched lecture updated successfully',
       progress: {
-        courseId: course._id,
-        lastWatchedLecture: progress.lastWatchedLecture,
+        courseId: course.id,
+        lastWatchedLecture: progress.lastWatchedLectureId,
         lastPlaybackTime: progress.lastPlaybackTime,
         updatedAt: progress.updatedAt,
       },
@@ -207,24 +254,36 @@ const recordLastWatched = async (req, res) => {
 const getCourseProgress = async (req, res) => {
   try {
     const { courseId } = req.params;
-    const userId = req.user.id || req.user._id;
+    const userId = req.user?.id || req.user?._id;
 
-    const course = await Course.findById(courseId);
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lectures: true },
+    });
+
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    const isEnrolled = course.enrolledStudents.some(
-      (id) => id.toString() === userId.toString()
-    );
+    const enrollment = await prisma.courseEnrollment.findUnique({
+      where: {
+        userId_courseId: { userId, courseId },
+      },
+    });
+
+    const isEnrolled = !!enrollment || req.user.role === 'admin';
 
     if (!isEnrolled) {
       return res.status(200).json({
         progress: {
-          courseId: course._id,
+          courseId: course.id,
           completedLectures: [],
           completedCount: 0,
-          totalLectures: course.lectures?.length || 0,
+          totalLectures: course.lectures.length,
           progressPercentage: 0,
           isCompleted: false,
           isEnrolled: false,
@@ -234,15 +293,22 @@ const getCourseProgress = async (req, res) => {
       });
     }
 
-    const progress = await Progress.findOne({ user: userId, course: courseId });
+    const progress = await prisma.progress.findUnique({
+      where: {
+        userId_courseId: { userId, courseId },
+      },
+      include: {
+        completedLectures: true,
+      },
+    });
 
     if (!progress) {
       return res.status(200).json({
         progress: {
-          courseId: course._id,
+          courseId: course.id,
           completedLectures: [],
           completedCount: 0,
-          totalLectures: course.lectures?.length || 0,
+          totalLectures: course.lectures.length,
           progressPercentage: 0,
           isCompleted: false,
           isEnrolled: true,
@@ -252,15 +318,12 @@ const getCourseProgress = async (req, res) => {
       });
     }
 
-    const validCourseLectureIds = new Set(
-      (course.lectures || []).map((l) => l._id.toString())
-    );
+    const validCourseLectureIds = new Set(course.lectures.map((l) => l.id));
+    const validCompleted = progress.completedLectures
+      .map((cl) => cl.lectureId)
+      .filter((id) => validCourseLectureIds.has(id));
 
-    const validCompleted = (progress.completedLectures || []).filter((id) =>
-      validCourseLectureIds.has(id.toString())
-    );
-
-    const totalLectures = course.lectures?.length || 0;
+    const totalLectures = course.lectures.length;
     const completedCount = validCompleted.length;
     const progressPercentage =
       totalLectures > 0
@@ -269,13 +332,13 @@ const getCourseProgress = async (req, res) => {
 
     return res.status(200).json({
       progress: {
-        courseId: course._id,
+        courseId: course.id,
         completedLectures: validCompleted,
         completedCount,
         totalLectures,
         progressPercentage,
         isCompleted: totalLectures > 0 && completedCount === totalLectures,
-        lastWatchedLecture: progress.lastWatchedLecture,
+        lastWatchedLecture: progress.lastWatchedLectureId,
         lastPlaybackTime: progress.lastPlaybackTime || 0,
         isEnrolled: true,
         updatedAt: progress.updatedAt,

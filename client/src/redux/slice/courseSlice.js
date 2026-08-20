@@ -195,7 +195,7 @@ const courseSlice = createSlice({
       })
       .addCase(deleteCourse.fulfilled, (state, action) => {
         state.loading = false;
-        state.courses = state.courses.filter((c) => c._id !== action.meta.arg);
+        state.courses = state.courses.filter((c) => (c.id || c._id) !== action.meta.arg);
       })
       .addCase(deleteCourse.rejected, (state, action) => {
         state.loading = false;

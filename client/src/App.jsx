@@ -22,61 +22,65 @@ import Dashboard from './pages/Dashboard';
 import TermsConditions from './pages/legal/TermsAndConditions';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import RefundsCancellations from './pages/legal/RefundsCancellations';
+import ScrollToTop from './components/ui/ScrollToTop';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomeLayout />}>
-        <Route index element={<Home />} />
-        <Route path="about" element={<About />} />
-        <Route path="contact" element={<Contact />} />
-        <Route path="courses" element={<CourseList />} />
-        <Route path="courses/:courseId" element={<CourseDetail />} />
-        <Route path="login" element={<Login />} />
-        <Route path="signup" element={<Signup />} />
-        <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="resetpassword/:token" element={<ResetPassword />} />
-        
-        {/* Protected Dashboard Route */}
-        <Route path="dashboard" element={
-          <RequireAuth roles={['student', 'admin']}>
-            <Dashboard />
-          </RequireAuth>
-        } />
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<HomeLayout />}>
+          <Route index element={<Home />} />
+          <Route path="about" element={<About />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="courses" element={<CourseList />} />
+          <Route path="courses/:courseId" element={<CourseDetail />} />
+          <Route path="login" element={<Login />} />
+          <Route path="signup" element={<Signup />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="resetpassword/:token" element={<ResetPassword />} />
+          
+          {/* Protected Dashboard Route */}
+          <Route path="dashboard" element={
+            <RequireAuth roles={['student', 'admin']}>
+              <Dashboard />
+            </RequireAuth>
+          } />
 
-        <Route path="create-course" element={
-          <RequireAuth roles={["admin"]}>
-            <CreateCourse />
-          </RequireAuth>
-        } />
-        
-        <Route path="profile" element={
-          <RequireAuth roles={['student', 'admin']}>
-            <Profile />
-          </RequireAuth>
-        } />
-        <Route path="changepassword" element={
-          <RequireAuth roles={['student', 'admin']}>
-            <ChangePassword />
-          </RequireAuth>
-        } />
-        <Route path="update-avatar" element={
-          <RequireAuth roles={['student', 'admin']}>
-            <UpdateAvatar />
-          </RequireAuth>
-        } />
-        <Route path="update-profile" element={
-          <RequireAuth roles={['student', 'admin']}>
-            <ProfileUpdate />
-          </RequireAuth>
-        } />
-        <Route path="terms-conditions" element={<TermsConditions />} />
-        <Route path="privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="refunds-cancellations" element={<RefundsCancellations />} />
-      </Route>
-      <Route path="/access-denied" element={<AccessDenied />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+          <Route path="create-course" element={
+            <RequireAuth roles={["admin"]}>
+              <CreateCourse />
+            </RequireAuth>
+          } />
+          
+          <Route path="profile" element={
+            <RequireAuth roles={['student', 'admin']}>
+              <Profile />
+            </RequireAuth>
+          } />
+          <Route path="changepassword" element={
+            <RequireAuth roles={['student', 'admin']}>
+              <ChangePassword />
+            </RequireAuth>
+          } />
+          <Route path="update-avatar" element={
+            <RequireAuth roles={['student', 'admin']}>
+              <UpdateAvatar />
+            </RequireAuth>
+          } />
+          <Route path="update-profile" element={
+            <RequireAuth roles={['student', 'admin']}>
+              <ProfileUpdate />
+            </RequireAuth>
+          } />
+          <Route path="terms-conditions" element={<TermsConditions />} />
+          <Route path="privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="refunds-cancellations" element={<RefundsCancellations />} />
+        </Route>
+        <Route path="/access-denied" element={<AccessDenied />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }
 

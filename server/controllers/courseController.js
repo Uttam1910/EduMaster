@@ -3,10 +3,8 @@ const cloudinary = require('../config/cloudinary');
 const fs = require('fs');
 const path = require('path');
 const Course = require('../models/course');
-const User = require('../models/user'); // Ensure you have this import
-
-
-
+const User = require('../models/user');
+const Progress = require('../models/progress');
 
 const uploadThumbnail = async (req, res, next) => {
   if (!req.file) {
@@ -14,7 +12,6 @@ const uploadThumbnail = async (req, res, next) => {
   }
 
   try {
-    // Upload the file to Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'course_thumbnails',
       use_filename: true,
@@ -22,20 +19,18 @@ const uploadThumbnail = async (req, res, next) => {
       resource_type: 'image',
     });
 
-    // Add Cloudinary response to req.body for further use
     req.body.thumbnail = {
       public_id: result.public_id,
       secure_url: result.secure_url,
     };
 
-
-    // Check if createdBy is included in the form data
     if (req.body.createdBy) {
-      req.body.createdBy = req.body.createdBy.trim(); // Optionally trim createdBy field
+      req.body.createdBy = req.body.createdBy.trim();
     }
 
-    // Remove the file from the local storage
-    fs.unlinkSync(req.file.path);
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
 
     next();
   } catch (error) {
@@ -43,9 +38,6 @@ const uploadThumbnail = async (req, res, next) => {
     res.status(500).json({ message: 'Failed to upload file' });
   }
 };
-
-
-
 
 const createCourse = async (req, res) => {
   const { title, description, category, thumbnail, createdBy } = req.body;
@@ -68,30 +60,24 @@ const createCourse = async (req, res) => {
   }
 };
 
-
-
-
-// Update course functionality
 const updateCourse = async (req, res) => {
   const { courseId } = req.params;
   const { title, description, category, thumbnail, createdBy } = req.body;
 
   try {
-    // Find the course by ID
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    // Update course fields
     course.title = title || course.title;
     course.description = description || course.description;
     course.category = category || course.category;
     course.createdBy = createdBy || course.createdBy;
+
     if (thumbnail) {
-      // Delete the old thumbnail from Cloudinary
-      if (course.thumbnail.public_id) {
-        await cloudinary.uploader.destroy(course.thumbnail.public_id);
+      if (course.thumbnail?.public_id) {
+        await cloudinary.uploader.destroy(course.thumbnail.public_id).catch(() => {});
       }
       course.thumbnail = thumbnail;
     }
@@ -105,10 +91,6 @@ const updateCourse = async (req, res) => {
   }
 };
 
-
-
-
-
 const deleteCourse = async (req, res) => {
   const { courseId } = req.params;
 
@@ -118,8 +100,8 @@ const deleteCourse = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    if (course.thumbnail.public_id) {
-      await cloudinary.uploader.destroy(course.thumbnail.public_id);
+    if (course.thumbnail?.public_id) {
+      await cloudinary.uploader.destroy(course.thumbnail.public_id).catch(() => {});
     }
 
     await Course.findByIdAndDelete(courseId);
@@ -131,10 +113,6 @@ const deleteCourse = async (req, res) => {
   }
 };
 
-
-
-
-
 const addLecture = async (req, res) => {
   const { courseId } = req.params;
   const { title, description } = req.body;
@@ -144,33 +122,23 @@ const addLecture = async (req, res) => {
       return res.status(400).json({ error: 'Video file not uploaded' });
     }
 
-    // Log the uploaded file details
-    console.log('Uploaded file:', req.file);
-
-    // Upload video to Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
       resource_type: 'video',
       folder: 'lectures',
     });
 
-    // Log Cloudinary response
-    console.log('Cloudinary response:', result);
-
-    // Extract secure_url and public_id from the Cloudinary response
     const { secure_url, public_id } = result;
 
     if (!secure_url || !public_id) {
       throw new Error('Missing secure_url or public_id from Cloudinary response');
     }
 
-    // Find the course by courseId
     const course = await Course.findById(courseId);
 
     if (!course) {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    // Add new lecture to lectures array
     const newLecture = {
       title,
       description,
@@ -181,16 +149,13 @@ const addLecture = async (req, res) => {
     };
 
     course.lectures.push(newLecture);
-    course.numberOfLectures += 1;
+    course.numberOfLectures = course.lectures.length;
 
-    // Log new lecture details
-    console.log('New Lecture:', newLecture);
-
-    // Save the updated course
     await course.save();
 
-    // Optionally, delete the temporary file uploaded by multer
-    fs.unlinkSync(req.file.path);
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
 
     res.status(201).json({ message: 'Lecture added successfully', course });
   } catch (err) {
@@ -199,11 +164,6 @@ const addLecture = async (req, res) => {
   }
 };
 
-
-
-
-
-// View all students enrolled in a course
 const viewEnrolledStudents = async (req, res) => {
   const { courseId } = req.params;
 
@@ -221,57 +181,19 @@ const viewEnrolledStudents = async (req, res) => {
   }
 };
 
-
-
-
-// View available courses
-// Controller to fetch all available courses
 const viewAvailableCourses = async (req, res) => {
   try {
-    // Fetch all courses from the database
     const courses = await Course.find();
-
-    // If no courses found, return a message
-    if (courses.length === 0) {
-      return res.status(404).json({ message: 'No courses available' });
-    }
-
-    // Return the list of courses
-    res.status(200).json(courses);
+    res.status(200).json(courses || []);
   } catch (err) {
     console.error('Error fetching courses:', err);
     res.status(500).json({ error: 'Failed to fetch courses' });
   }
 };
 
-// // View available courses
-// // Controller to fetch all available courses
-// const viewAvailableCourses = async (req, res) => {
-//   try {
-//     // Fetch all courses from the database
-//     const courses = await Course.find();
-
-//     // If no courses found, return a message
-//     if (courses.length === 0) {
-//       return res.status(404).json({ message: 'No courses available' });
-//     }
-
-//     // Return the list of courses
-//     res.status(200).json(courses);
-//   } catch (err) {
-//     console.error('Error fetching courses:', err);
-//     res.status(500).json({ error: 'Failed to fetch courses' });
-//   }
-// };
-
-
-
-
-// Controller to enroll a user in a course
-
 const enrollInCourse = async (req, res) => {
   const { courseId } = req.params;
-  const userId = req.user._id;
+  const userId = req.user.id || req.user._id;
 
   try {
     const user = await User.findById(userId);
@@ -290,14 +212,22 @@ const enrollInCourse = async (req, res) => {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    if (course.enrolledStudents.includes(userId)) {
+    const isAlreadyEnrolled = course.enrolledStudents.some(
+      (id) => id.toString() === userId.toString()
+    );
+
+    if (isAlreadyEnrolled) {
       return res.status(400).json({ error: 'User is already enrolled in this course' });
     }
 
     course.enrolledStudents.push(userId);
     await course.save();
 
-    if (!user.enrolledCourses.includes(courseId)) {
+    const isUserCourseRecorded = user.enrolledCourses.some(
+      (id) => id.toString() === courseId.toString()
+    );
+
+    if (!isUserCourseRecorded) {
       user.enrolledCourses.push(courseId);
       await user.save();
     }
@@ -309,17 +239,10 @@ const enrollInCourse = async (req, res) => {
   }
 };
 
-
-
-
-// View Enrolled Courses with Progress Metadata
-const Progress = require('../models/progress');
-
 const viewEnrolledCourses = async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
 
-    // Find the user by ID and populate enrolled courses
     const user = await User.findById(userId).populate('enrolledCourses');
 
     if (!user) {
@@ -329,7 +252,6 @@ const viewEnrolledCourses = async (req, res) => {
     const enrolledCourses = user.enrolledCourses || [];
     const courseIds = enrolledCourses.map((c) => c._id);
 
-    // Fetch progress documents for all enrolled courses in one efficient query
     const progressList = await Progress.find({
       user: userId,
       course: { $in: courseIds },
@@ -340,7 +262,6 @@ const viewEnrolledCourses = async (req, res) => {
       progressMap[p.course.toString()] = p;
     });
 
-    // Merge progress into each course object
     const enrichedEnrolledCourses = enrolledCourses.map((course) => {
       const courseObj = course.toObject ? course.toObject() : course;
       const prog = progressMap[course._id.toString()];
@@ -375,12 +296,6 @@ const viewEnrolledCourses = async (req, res) => {
   }
 };
 
-
-
-
-
-
-// Controller function to get a course by ID
 const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.courseId);
@@ -395,9 +310,6 @@ const getCourseById = async (req, res) => {
   }
 };
 
-
-
-
 module.exports = {
   uploadThumbnail,
   createCourse,
@@ -408,5 +320,5 @@ module.exports = {
   viewAvailableCourses,
   enrollInCourse,
   viewEnrolledCourses,
-  getCourseById
+  getCourseById,
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { updateProfile } from "../../redux/slice/userSlice";
+import { updateUserProfile } from "../../redux/slice/authSlice";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
@@ -9,9 +9,7 @@ import { HiUser, HiEnvelope, HiLockClosed } from "react-icons/hi2";
 const ProfileUpdate = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const authUser = useSelector((state) => state.auth.user);
-  const userState = useSelector((state) => state.user.user);
-  const currentUser = userState || authUser;
+  const currentUser = useSelector((state) => state.auth.user);
 
   const [formData, setFormData] = useState({
     username: currentUser?.username || "",
@@ -38,7 +36,7 @@ const ProfileUpdate = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    dispatch(updateProfile(formData))
+    dispatch(updateUserProfile(formData))
       .unwrap()
       .then(() => {
         toast.success("Profile details updated successfully");

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserProfile } from '../../redux/slice/authSlice';
 import { toast } from 'react-hot-toast';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FaEdit, FaKey, FaCamera } from 'react-icons/fa';
 import { HiUser, HiEnvelope, HiShieldCheck, HiCalendar, HiClock } from 'react-icons/hi2';
 import Badge from '../../components/ui/Badge';
@@ -23,6 +23,8 @@ const Profile = () => {
     }
   }, [error]);
 
+  const avatarUrl = user?.avatar?.secureUrl || user?.avatar?.secure_url;
+
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
       {/* Profile Header Banner */}
@@ -31,11 +33,15 @@ const Profile = () => {
         <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
           {/* Avatar Container */}
           <div className="relative group">
-            {user?.avatar?.secureUrl ? (
+            {avatarUrl ? (
               <img
-                src={user.avatar.secureUrl}
+                src={avatarUrl}
                 alt="User Avatar"
                 className="w-28 h-28 rounded-full border-4 border-white/20 shadow-xl object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                }}
               />
             ) : (
               <div className="w-28 h-28 rounded-full border-4 border-white/20 shadow-xl bg-indigo-600 flex items-center justify-center font-bold text-3xl text-white">

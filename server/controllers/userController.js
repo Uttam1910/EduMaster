@@ -34,7 +34,6 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "Please fill in all required fields (username, email, password)." });
     }
 
-    // Only email needs to be unique. Names can be duplicated.
     const emailExists = await User.findOne({ email: email.toLowerCase() });
     if (emailExists) {
       return res.status(400).json({ message: "An account with this email address already exists." });
@@ -50,7 +49,7 @@ exports.register = async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1d",
     });
 
     res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production" });
@@ -62,6 +61,7 @@ exports.register = async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
       },
     });
   } catch (error) {
@@ -97,7 +97,7 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1d",
     });
 
     res.cookie("token", token, {
@@ -113,6 +113,7 @@ exports.login = async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
       },
     });
   } catch (error) {
@@ -130,7 +131,8 @@ exports.logout = (req, res) => {
 // View user profile
 exports.viewProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const userId = req.user.id || req.user._id;
+    const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -168,13 +170,15 @@ exports.uploadAvatar = async (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
+    const userId = req.user.id || req.user._id;
+
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: "avatars",
       width: 150,
       crop: "scale",
     });
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -187,15 +191,14 @@ exports.uploadAvatar = async (req, res) => {
 
     await user.save();
 
-    // Delete the file from the local uploads folder
-    fs.unlinkSync(req.file.path);
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
 
     res.status(200).json(user.avatar);
   } catch (error) {
     console.error("Error uploading avatar:", error);
-    res
-      .status(500)
-      .json({ message: "Error uploading avatar", error: error.message });
+    res.status(500).json({ message: "Error uploading avatar", error: error.message });
   }
 };
 
@@ -203,35 +206,32 @@ exports.uploadAvatar = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email?.toLowerCase() });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Generate reset token
     const resetToken = user.getResetPasswordToken();
-
     await user.save();
 
-    // Create reset URL for the frontend
-    const resetUrl = `http://localhost:5173/resetpassword/${resetToken}`;
+    const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const resetUrl = `${frontendUrl}/resetpassword/${resetToken}`;
 
     const message = `
       <h1>Password Reset Request</h1>
-      <p>You requested a password reset</p>
-      <p>Please click on the following link to reset your password:</p>
+      <p>You requested a password reset for your EduMaster account.</p>
+      <p>Click on the link below to reset your password:</p>
       <a href="${resetUrl}" clicktracking=off>${resetUrl}</a>
       <p>If you did not request this, please ignore this email.</p>
     `;
 
-    // Send email
     await transporter.sendMail({
       to: user.email,
       subject: "Password Reset Request",
       html: message,
     });
 
-    res.status(200).json({ message: "Email sent" });
+    res.status(200).json({ message: "Password reset link sent to email" });
   } catch (error) {
     console.error("Error in forgotPassword:", error);
     res.status(500).json({ message: "Server error" });
@@ -251,12 +251,9 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res
-        .status(400)
-        .json({ message: "Invalid token or token expired" });
+      return res.status(400).json({ message: "Invalid token or token expired" });
     }
 
-    // Set new password
     user.password = req.body.password;
     user.forgotPasswordToken = undefined;
     user.forgotPasswordExpires = undefined;
@@ -272,19 +269,19 @@ exports.resetPassword = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id || req.user._id;
     const { username, email, password } = req.body;
 
-    // Check if the email is already in use
     if (email) {
-      const emailExists = await User.findOne({ email });
+      const emailExists = await User.findOne({ email: email.toLowerCase() });
       if (emailExists && emailExists._id.toString() !== userId.toString()) {
         return res.status(400).json({ message: "Email already in use" });
       }
     }
 
-    // Update the user's profile
-    const updatedFields = { username, email };
+    const updatedFields = {};
+    if (username) updatedFields.username = username.trim();
+    if (email) updatedFields.email = email.toLowerCase().trim();
 
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -299,12 +296,13 @@ exports.updateProfile = async (req, res) => {
       });
 
       updatedFields.avatar = {
-        public_id: result.public_id,
-        secure_url: result.secure_url,
+        publicId: result.public_id,
+        secureUrl: result.secure_url,
       };
 
-      // Remove temporary file after upload
-      fs.unlinkSync(req.file.path);
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, updatedFields, {
@@ -321,33 +319,26 @@ exports.updateProfile = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.id || req.user._id;
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: "Current password and new password are required" });
+      return res.status(400).json({ message: "Current password and new password are required" });
     }
 
-    // Find user by ID and include the password field
     const user = await User.findById(userId).select("+password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the current password is correct
     const isMatch = await bcrypt.compare(currentPassword, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ message: "Current password is incorrect" });
     }
 
-    // Update the password
     user.password = newPassword;
-
-    // Save the updated user
     await user.save();
 
     res.status(200).json({ message: "Password changed successfully" });

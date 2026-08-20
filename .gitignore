@@ -8,6 +8,13 @@ dist/
 build/
 **/build/
 
+# Local User Uploads & Media Files
+uploads/
+**/uploads/
+server/uploads/
+uploads/*
+!uploads/.gitkeep
+
 # Environment files
 .env
 .env.local

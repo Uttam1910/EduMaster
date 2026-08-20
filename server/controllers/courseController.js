@@ -186,14 +186,18 @@ const deleteCourse = async (req, res) => {
   }
 };
 
+const { uploadVideoToCloudinary, deleteCloudinaryAsset } = require('../utils/cloudinaryHelper');
+
 const addLecture = async (req, res) => {
-  const { courseId } = req.params;
-  const { title, description } = req.body;
+  if (!req.file) {
+    return res.status(400).json({ error: 'Video file not uploaded' });
+  }
+
+  const filePath = req.file.path;
 
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Video file not uploaded' });
-    }
+    const { courseId } = req.params;
+    const { title, description } = req.body;
 
     const course = await prisma.course.findUnique({
       where: { id: courseId },
@@ -204,16 +208,8 @@ const addLecture = async (req, res) => {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      resource_type: 'video',
-      folder: 'lectures',
-    });
-
+    const result = await uploadVideoToCloudinary(filePath, 'lectures');
     const { secure_url, public_id } = result;
-
-    if (!secure_url || !public_id) {
-      throw new Error('Missing secure_url or public_id from Cloudinary response');
-    }
 
     await prisma.lecture.create({
       data: {
@@ -237,10 +233,6 @@ const addLecture = async (req, res) => {
       },
     });
 
-    if (fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-
     res.status(201).json({
       message: 'Lecture added successfully',
       course: formatCourseResponse(updatedCourse),
@@ -248,6 +240,14 @@ const addLecture = async (req, res) => {
   } catch (err) {
     console.error('Error adding lecture:', err);
     res.status(500).json({ error: 'Failed to add lecture', details: err.message });
+  } finally {
+    try {
+      if (filePath && fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (e) {
+      console.error('Error cleaning up temp video file:', e.message);
+    }
   }
 };
 

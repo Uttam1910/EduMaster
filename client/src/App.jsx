@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import HomeLayout from "./layout/HomeLayout";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -24,11 +24,46 @@ import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import RefundsCancellations from './pages/legal/RefundsCancellations';
 import ScrollToTop from './components/ui/ScrollToTop';
 
+// Dedicated Admin Components & Pages
+import RequireAdmin from './components/auth/RequireAdmin';
+import AdminLayout from './layout/AdminLayout';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminCourseList from './pages/admin/AdminCourseList';
+import AdminCreateCourse from './pages/admin/AdminCreateCourse';
+import AdminCourseDetail from './pages/admin/AdminCourseDetail';
+import AdminEditCourse from './pages/admin/AdminEditCourse';
+import AdminLectures from './pages/admin/AdminLectures';
+import AdminUserList from './pages/admin/AdminUserList';
+
 function App() {
   return (
     <>
       <ScrollToTop />
       <Routes>
+        {/* Dedicated Admin Sign In Route */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Dedicated Protected Admin Workspace Routes */}
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <AdminLayout />
+            </RequireAdmin>
+          }
+        >
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="courses" element={<AdminCourseList />} />
+          <Route path="courses/create" element={<AdminCreateCourse />} />
+          <Route path="courses/:courseId" element={<AdminCourseDetail />} />
+          <Route path="courses/:courseId/edit" element={<AdminEditCourse />} />
+          <Route path="courses/:courseId/lectures" element={<AdminLectures />} />
+          <Route path="users" element={<AdminUserList />} />
+        </Route>
+
+        {/* Public & Student Application Routes */}
         <Route path="/" element={<HomeLayout />}>
           <Route index element={<Home />} />
           <Route path="about" element={<About />} />
@@ -40,7 +75,7 @@ function App() {
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="resetpassword/:token" element={<ResetPassword />} />
           
-          {/* Protected Dashboard Route */}
+          {/* Student Dashboard Route */}
           <Route path="dashboard" element={
             <RequireAuth roles={['student', 'admin']}>
               <Dashboard />
@@ -77,6 +112,7 @@ function App() {
           <Route path="privacy-policy" element={<PrivacyPolicy />} />
           <Route path="refunds-cancellations" element={<RefundsCancellations />} />
         </Route>
+        
         <Route path="/access-denied" element={<AccessDenied />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

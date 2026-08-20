@@ -14,28 +14,30 @@ const app = express();
 // Connect to the database
 connectDB();
 
-// Middleware
-app.use(express.json()); // For parsing application/json
-app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
+// Middleware - Increased payload limits for metadata & forms
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cookieParser());
+
 const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
-  process.env.FRONTEND_URL
+  process.env.FRONTEND_URL,
 ].filter(Boolean);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, postman)
-    if (!origin || allowedOrigins.includes(origin)) {
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, postman)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
       return callback(null, true);
-    }
-    return callback(null, true);
-  },
-  credentials: true,
-}));
-
+    },
+    credentials: true,
+  })
+);
 
 // Routes
 const userRoutes = require('./routes/userRoutes');
@@ -44,7 +46,8 @@ app.use('/api/users', userRoutes);
 const courseRoutes = require('./routes/courseRoutes');
 app.use('/api/courses', courseRoutes);
 
-
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
 
 const contactRoutes = require('./routes/contactRoutes');
 app.use('/api', contactRoutes);
